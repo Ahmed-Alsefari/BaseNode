@@ -1,0 +1,18 @@
+name: Mirror to Professor Repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Push to professor repo
+        run: |
+          git remote add professor https://github.com/cpit252-spring-26-IT1/BaseNode.git
+          git push professor main
