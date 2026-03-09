@@ -14,5 +14,5 @@ jobs:
 
       - name: Push to professor repo
         run: |
-          git remote add professor https://github.com/cpit252-spring-26-IT1/BaseNode.git
+          git remote add professor https://x-access-token:${{ secrets.PROF_TOKEN }}@github.com/cpit252-spring-26-IT1/BaseNode.git
           git push professor main
