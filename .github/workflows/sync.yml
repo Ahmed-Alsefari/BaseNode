@@ -10,14 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Push to professor repo
+        env:
+          TOKEN: ${{ secrets.PROFESSOR_TOKEN }}
         run: |
           git config --global user.name "sync-bot"
           git config --global user.email "sync@github.com"
-          
-          git remote add professor https://x-access-token:${{ secrets.PROFESSOR_TOKEN }}@github.com/cpit252-spring-26-IT1/BaseNode.git
-          
+
+          git remote add professor https://$TOKEN@github.com/cpit252-spring-26-IT1/BaseNode.git
           git push professor main
