@@ -7,6 +7,7 @@ on:
 
 jobs:
   sync:
+    if: github.repository == 'Ahmed-Alsefari/BaseNode'
     runs-on: ubuntu-latest
 
     steps:
