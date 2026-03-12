@@ -8,6 +8,15 @@ public class BaseNodeApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(BaseNodeApplication.class, args);
+		System.out.println("\n" +
+				"╔═════════════════════════════════════╗\n" +
+				"║         BaseNode Started!           ║\n" +
+				"║-------------------------------------║\n" +
+				"║  >>> Local: http://localhost:8080   ║\n" +
+				"║  >>> Admin: admin / 123456          ║\n" +
+				"╚═════════════════════════════════════╝\n"
+		);
+
 	}
 
 }
