@@ -18,6 +18,14 @@ public interface WebController {
             Model model,
             HttpSession session
     );
+    // adding register path #A
+    @GetMapping("/register")
+    String showRegisterPage(Model model);
+
+    @PostMapping("/register")
+    String processRegister(@RequestParam String username,
+                           @RequestParam String password,
+                           Model model);
 
     @GetMapping("/logout")
     String logout(HttpSession session);

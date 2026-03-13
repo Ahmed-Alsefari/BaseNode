@@ -44,6 +44,30 @@ public class WebControllerImpl implements WebController {
         return "login";
     }
 
+    @Override
+    public String showRegisterPage(Model model) {
+        return "register";
+    }
+// take the name and pass #A
+    @Override
+    public String processRegister(@RequestParam String username,
+                                  @RequestParam String password,
+                                  Model model) {
+// check if the user is already exists #A
+        if (userRepository.findByUsername(username).isPresent()) {
+            model.addAttribute("error", "Username already exists.");
+            return "register";
+        }
+// if the user not exists #A
+        UserEntity user = new UserEntity();
+        user.setUsername(username);
+        user.setPassword(password);
+        user.setRole("USER");
+
+        userRepository.save(user);
+
+        return "redirect:/login";
+    }
 
     @Override
     public String logout(HttpSession session) {

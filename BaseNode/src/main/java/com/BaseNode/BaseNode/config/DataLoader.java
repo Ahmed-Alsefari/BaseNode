@@ -23,11 +23,11 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (userRepository.count() == 0) {
-            UserEntity admin = new UserEntity("admin", "123456", "ADMIN");
-            userRepository.save(admin);
-            System.out.println(">>> DB SEEDED: admin user created");
+          UserEntity admin = new UserEntity("admin", "123456", "ADMIN");
+           userRepository.save(admin);
+           System.out.println(">>> DB SEEDED: admin user created");
         } else {
-            System.out.println(">>> DB already has users, count=" + userRepository.count());
-        }
+           System.out.println(">>> DB already has users, count=" + userRepository.count());
+       }
     }
 }
