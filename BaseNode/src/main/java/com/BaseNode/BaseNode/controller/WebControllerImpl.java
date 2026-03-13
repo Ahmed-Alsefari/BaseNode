@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,8 @@ public class WebControllerImpl implements WebController {
     private static final String SESSION_USER = "loggedInUser";
 
     private final UserRepository userRepository;
+// new object encoder used for password hash #A
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     public WebControllerImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -35,7 +38,8 @@ public class WebControllerImpl implements WebController {
         Optional<UserEntity> userOpt = userRepository.findByUsername(username);
         if (userOpt.isPresent()) {
             String dbPassword = userOpt.get().getPassword();
-            if (dbPassword.equals(password)) {
+            // match the password hash with stored db_hash #A
+            if (encoder.matches(password, dbPassword)) {
                 session.setAttribute(SESSION_USER, username);
                 return "redirect:/";
             }
@@ -61,7 +65,8 @@ public class WebControllerImpl implements WebController {
 // if the user not exists #A
         UserEntity user = new UserEntity();
         user.setUsername(username);
-        user.setPassword(password);
+        //encode pass #A
+        user.setPassword(encoder.encode(password));
         user.setRole("USER");
 
         userRepository.save(user);
