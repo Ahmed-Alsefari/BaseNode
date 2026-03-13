@@ -13,7 +13,6 @@ public class BaseNodeApplication {
 				"║         BaseNode Started!           ║\n" +
 				"║-------------------------------------║\n" +
 				"║  >>> Local: http://localhost:8080   ║\n" +
-				"║  >>> Admin: admin / 123456          ║\n" +
 				"╚═════════════════════════════════════╝\n"
 		);
 
