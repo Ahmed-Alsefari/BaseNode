@@ -22,16 +22,18 @@
 
   <div th:if="${error}" class="error" th:text="${error}"></div>
 
-  <form method="post" th:action="@{/register}">
-
+  <form th:action="@{/register}" th:object="${registerRequest}" method="post" novalidate>
     <label for="username">Username:</label>
-    <input type="text" id="username" name="username" required/>
+    <input type="text" id="username" th:field="*{username}" />
+    <small th:if="${#fields.hasErrors('username')}"
+           th:text="${#fields.errors('username')[0]}"></small>
 
     <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required/>
+    <input type="password" id="password" th:field="*{password}" />
+    <small th:if="${#fields.hasErrors('password')}"
+           th:text="${#fields.errors('password')[0]}"></small>
 
     <button type="submit">Register</button>
-
   </form>
 
   <p class="info">

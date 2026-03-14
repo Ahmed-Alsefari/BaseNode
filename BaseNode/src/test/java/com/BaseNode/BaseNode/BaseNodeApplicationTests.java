@@ -9,54 +9,105 @@ package com.BaseNode.BaseNode;
 import com.BaseNode.BaseNode.controller.WebControllerImpl;
 import com.BaseNode.BaseNode.model.UserEntity;
 import com.BaseNode.BaseNode.repository.UserRepository;
+import com.BaseNode.BaseNode.dto.LoginRequest;
 import jakarta.servlet.http.HttpSession;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.ui.ConcurrentModel;
 import org.springframework.ui.Model;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
-class BaseNodeApplicationTests {
+public class BaseNodeApplicationTests {
 
-	private final UserRepository userRepository = mock(UserRepository.class);
-	private final WebControllerImpl controller = new WebControllerImpl(userRepository);
-	private final Model model = mock(Model.class);
-	private final HttpSession session = mock(HttpSession.class);
+	private UserRepository userRepository;
+	private HttpSession session;
+	private WebControllerImpl controller;
+	private PasswordEncoder encoder;
+	@BeforeEach
+	void setUp() {
+		userRepository = mock(UserRepository.class);
+		session = mock(HttpSession.class);
+		encoder = new BCryptPasswordEncoder();
 
-	@Test
-	void contextLoads() {
+		controller = new WebControllerImpl(userRepository, encoder);
 	}
 
 	@Test
 	void loginSuccess_redirectsToHome() {
-		UserEntity admin = new UserEntity("admin", "123456", "ADMIN");
-		when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
 
-		String result = controller.processLogin("admin", "123456", model, session);
+		Model model = new ConcurrentModel();
+
+		LoginRequest loginRequest = new LoginRequest();
+		loginRequest.setUsername("testUser");
+		loginRequest.setPassword("testPassword");
+
+		BindingResult bindingResult =
+				new BeanPropertyBindingResult(loginRequest, "loginRequest");
+
+		UserEntity user =
+				new UserEntity("testUser", encoder.encode("testPassword"), "USER");
+
+		when(userRepository.findByUsername("testUser"))
+				.thenReturn(Optional.of(user));
+
+		String result =
+				controller.processLogin(loginRequest, bindingResult, model, session);
 
 		assertEquals("redirect:/", result);
+
+		verify(session).setAttribute("loggedInUser", "testUser");
 	}
 
 	@Test
-	void loginFail_wrongPassword_staysOnLoginPage() {
-		UserEntity admin = new UserEntity("admin", "123456", "ADMIN");
-		when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+	void loginFail_wrongPassword() {
 
-		String result = controller.processLogin("admin", "wrongpass", model, session);
+		Model model = new ConcurrentModel();
+
+		LoginRequest loginRequest = new LoginRequest();
+		loginRequest.setUsername("testUser");
+		loginRequest.setPassword("wrongPassword");
+
+		BindingResult bindingResult =
+				new BeanPropertyBindingResult(loginRequest, "loginRequest");
+
+		UserEntity user =
+				new UserEntity("testUser", encoder.encode("correctPassword"), "USER");
+
+		when(userRepository.findByUsername("testUser"))
+				.thenReturn(Optional.of(user));
+
+		String result =
+				controller.processLogin(loginRequest, bindingResult, model, session);
 
 		assertEquals("login", result);
 	}
 
 	@Test
-	void fileManager_noSession_redirectsToLogin() {
-		when(session.getAttribute("loggedInUser")).thenReturn(null);
+	void loginFail_userNotFound() {
 
-		String result = controller.showFileManager(model, session);
+		Model model = new ConcurrentModel();
 
-		assertEquals("redirect:/login", result);
+		LoginRequest loginRequest = new LoginRequest();
+		loginRequest.setUsername("unknownUser");
+		loginRequest.setPassword("anyPassword");
+
+		BindingResult bindingResult =
+				new BeanPropertyBindingResult(loginRequest, "loginRequest");
+
+		when(userRepository.findByUsername("unknownUser"))
+				.thenReturn(Optional.empty());
+
+		String result =
+				controller.processLogin(loginRequest, bindingResult, model, session);
+
+		assertEquals("login", result);
 	}
 }

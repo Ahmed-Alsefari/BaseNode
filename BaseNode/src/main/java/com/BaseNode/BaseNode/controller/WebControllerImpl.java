@@ -1,10 +1,16 @@
 package com.BaseNode.BaseNode.controller;
 
+import com.BaseNode.BaseNode.dto.LoginRequest;
+import com.BaseNode.BaseNode.dto.RegisterRequest;
 import com.BaseNode.BaseNode.model.UserEntity;
 import com.BaseNode.BaseNode.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -19,28 +25,34 @@ public class WebControllerImpl implements WebController {
     private static final String SESSION_USER = "loggedInUser";
 
     private final UserRepository userRepository;
-// new object encoder used for password hash #A
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    // call PasswordEncoder for creation #A
+    private final PasswordEncoder encoder;
 
-    public WebControllerImpl(UserRepository userRepository) {
+    public WebControllerImpl(UserRepository userRepository, PasswordEncoder encoder) {
         this.userRepository = userRepository;
+        this.encoder = encoder;
     }
 
 
     @Override
     public String showLoginPage(Model model) {
+        model.addAttribute("loginRequest", new LoginRequest());
         return "login";
     }
 
-
+    // take the name and pass 1# search for the user in the database. 2# chack for the password 3# create session for user .... #A
     @Override
-    public String processLogin(@RequestParam String username, @RequestParam String password, Model model, HttpSession session) {
-        Optional<UserEntity> userOpt = userRepository.findByUsername(username);
+    public String processLogin( @Valid @ModelAttribute("loginRequest") LoginRequest loginRequest, BindingResult bindingResult, Model model, HttpSession session) {
+        if (bindingResult.hasErrors()) {
+            return "login";
+        }
+
+        Optional<UserEntity> userOpt = userRepository.findByUsername(loginRequest.getUsername());
         if (userOpt.isPresent()) {
             String dbPassword = userOpt.get().getPassword();
             // match the password hash with stored db_hash #A
-            if (encoder.matches(password, dbPassword)) {
-                session.setAttribute(SESSION_USER, username);
+            if (encoder.matches(loginRequest.getPassword(), dbPassword)) {
+                session.setAttribute(SESSION_USER, loginRequest.getUsername());
                 return "redirect:/";
             }
         }
@@ -50,24 +62,31 @@ public class WebControllerImpl implements WebController {
 
     @Override
     public String showRegisterPage(Model model) {
+        model.addAttribute("registerRequest", new RegisterRequest());
         return "register";
     }
 // take the name and pass #A
     @Override
-    public String processRegister(@RequestParam String username,
-                                  @RequestParam String password,
+    public String processRegister(@Valid @ModelAttribute("registerRequest") RegisterRequest registerRequest,
+                                  BindingResult bindingResult,
                                   Model model) {
+    // if validation errors exist #A
+        if (bindingResult.hasErrors()) {
+            return "register";
+        }
 // check if the user is already exists #A
-        if (userRepository.findByUsername(username).isPresent()) {
+        if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             model.addAttribute("error", "Username already exists.");
             return "register";
         }
 // if the user not exists #A
-        UserEntity user = new UserEntity();
-        user.setUsername(username);
+        UserEntity user = new UserEntity(
+                registerRequest.getUsername(),
         //encode pass #A
-        user.setPassword(encoder.encode(password));
-        user.setRole("USER");
+        encoder.encode(registerRequest.getPassword()),
+                "USER"
+    );
+
 
         userRepository.save(user);
 

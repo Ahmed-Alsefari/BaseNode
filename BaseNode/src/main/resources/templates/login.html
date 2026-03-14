@@ -20,12 +20,14 @@
 
     <div th:if="${error}" class="error" th:text="${error}"></div>
 
-    <form method="post" th:action="@{/login}">
-    <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required/>
-
+    <form th:action="@{/login}" th:object="${loginRequest}" method="post">
+        <input type="text" th:field="*{username}" />
+        <small th:if="${#fields.hasErrors('username')}"
+               th:text="${#fields.errors('username')[0]}"></small>
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required/>
+        <input type="password" id="password" th:field="*{password}" />
+        <small th:if="${#fields.hasErrors('password')}"
+               th:text="${#fields.errors('password')[0]}"></small>
 
         <button type="submit">Login</button>
     </form>
@@ -34,7 +36,7 @@
         <a th:href="@{/register}">Register here</a>
     </p>
     <div class="info">
-        Default: admin / 123456 (temp)
+        (temp)
     </div>
 </div>
 </body>
