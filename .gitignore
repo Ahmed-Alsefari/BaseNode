@@ -1,2 +1,9 @@
 basenode_db.mv.db
 basenode_db.trace.db
+.idea/
+target/
+*.class
+*.log
+*.mv.db
+*.trace.db
+${project.build.directory}/
