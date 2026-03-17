@@ -1,7 +1,6 @@
 package com.BaseNode.BaseNode.model;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 
@@ -13,85 +12,46 @@ public class FileEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "name", nullable = false)
+    private String fileName;
+
     @Column(nullable = false)
-    private String name;
+    private String filePath;
 
-    private String path;
-    private Boolean isDirectory;
+    @Column(nullable = false)
+    private long fileSize;
 
-    private Long size;
-    private LocalDateTime lastModified;
+    @Column(nullable = false)
+    private String contentType;
 
-    @ManyToOne
-    @JoinColumn(name = "parent_id")
-    private FileEntity parent;
+    @Column(nullable = false)
+    private LocalDateTime uploadDate;
 
-    public FileEntity() {
+    public FileEntity() {}
 
+    public FileEntity(String fileName, String filePath, long fileSize, String contentType) {
+        this.fileName = fileName;
+        this.filePath = filePath;
+        this.fileSize = fileSize;
+        this.contentType = contentType;
+        this.uploadDate = LocalDateTime.now();
     }
 
-    public FileEntity(String name, String path, Boolean isDirectory, Long size, LocalDateTime lastModified, FileEntity parent) {
-        this.name = name;
-        this.path = path;
-        this.isDirectory = isDirectory;
-        this.size = size;
-        this.lastModified = lastModified;
-        this.parent = parent;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public Long getId() {
-        return id;
-    }
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getFilePath() { return filePath; }
+    public void setFilePath(String filePath) { this.filePath = filePath; }
 
-    public String getName() {
-        return name;
-    }
+    public long getFileSize() { return fileSize; }
+    public void setFileSize(long fileSize) { this.fileSize = fileSize; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getContentType() { return contentType; }
+    public void setContentType(String contentType) { this.contentType = contentType; }
 
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    public Boolean getIsDirectory() {
-        return isDirectory;
-    }
-
-    public void setIsDirectory(Boolean isDirectory) {
-        this.isDirectory = isDirectory;
-    }
-
-    public Long getSize() {
-        return size;
-    }
-
-    public void setSize(Long size) {
-        this.size = size;
-    }
-
-    public LocalDateTime getLastModified() {
-        return lastModified;
-    }
-
-    public void setLastModified(LocalDateTime lastModified) {
-        this.lastModified = lastModified;
-    }
-
-    public FileEntity getParent() {
-        return parent;
-    }
-
-    public void setParent(FileEntity parent) {
-        this.parent = parent;
-    }
+    public LocalDateTime getUploadDate() { return uploadDate; }
+    public void setUploadDate(LocalDateTime uploadDate) { this.uploadDate = uploadDate; }
 }

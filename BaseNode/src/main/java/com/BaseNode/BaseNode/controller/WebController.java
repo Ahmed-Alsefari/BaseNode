@@ -1,15 +1,17 @@
 package com.BaseNode.BaseNode.controller;
 
-import com.BaseNode.BaseNode.dto.LoginRequest;
-import com.BaseNode.BaseNode.dto.RegisterRequest;
+import com.BaseNode.BaseNode.request.LoginRequest;
+import com.BaseNode.BaseNode.request.RegisterRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
+import java.io.IOException;
 
 public interface WebController {
 
@@ -23,7 +25,6 @@ public interface WebController {
             Model model,
             HttpSession session
     );
-    // adding register path #A
     @GetMapping("/register")
     String showRegisterPage(Model model);
 
@@ -39,4 +40,7 @@ public interface WebController {
 
     @GetMapping("/")
     String showFileManager(Model model, HttpSession session);
+
+    @PostMapping("/delete/{id}")
+    String deleteFile(@PathVariable Long id, HttpSession session) throws IOException;
 }

@@ -20,7 +20,6 @@
         .actions a.delete { color: #dc3545; }
         .actions a.view  { color: #28a745; }
 
-        /* ── Breadcrumb ── */
         .breadcrumb {
             background: #e9ecef;
             padding: 10px 14px;
@@ -37,45 +36,37 @@
         .breadcrumb a:hover { text-decoration: underline; }
         .breadcrumb .separator { margin: 0 4px; color: #666; }
         .breadcrumb .current { color: #333; }
+
+        .upload-form { display: inline; }
+        .file-input { display: none; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>BaseNode File Manager</h1>
+    <h1>
+        BaseNode File Manager
 
-    <!-- Toolbar -->
+        <img src="/images/BaseNode.png" alt="logo"
+             style="height: 75px; vertical-align: middle; margin-right: 150px;" />
+
+    </h1>
     <div class="toolbar">
-        <a href="#" onclick="alert('Upload File — coming soon')" class="upload">Upload File</a>
+        <form method="post" action="/api/files/upload" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="file" id="fileInput" class="file-input" multiple onchange="this.form.submit()" />
+            <button type="button" class="upload" onclick="document.getElementById('fileInput').click()">Upload File</button>
+        </form>
         <a href="#" onclick="alert('New Folder — coming soon')">New Folder</a>
         <a href="/logout" style="background: #dc3545;">Logout</a>
     </div>
 
-    <!-- Breadcrumb path -->
     <div class="breadcrumb">
         <strong>Current Path:</strong>
-
-        <!-- Home is always the first clickable crumb -->
-        <a href="/" onclick="alert('back to home '); return false;">Home</a>
-
-        <!--
-            TODO: when real navigation is implemented, loop over path segments here.
-            Example for a path like /homework/math:
-
-            <span class="separator">/</span>
-            <a href="/homework" onclick="alert('Navigate to homework — coming soon'); return false;">homework</a>
-
-            <span class="separator">/</span>
-            <span class="current">math</span>
-
-            For now we just show the raw currentPath after Home as a static label.
-        -->
+        <a href="/">Home</a>
         <th:block th:if="${currentPath != null and currentPath != '/'}">
             <span th:each="segment, stat : ${currentPath.split('/')}"
                   th:if="${!segment.isEmpty()}">
                 <span class="separator">/</span>
-                <!-- Last segment is not clickable (you are here) -->
                 <span th:if="${stat.last}" class="current" th:text="${segment}"></span>
-                <!-- Earlier segments are clickable placeholders -->
                 <a th:unless="${stat.last}"
                    href="#"
                    th:text="${segment}"
@@ -84,7 +75,6 @@
         </th:block>
     </div>
 
-    <!-- File table -->
     <table>
         <thead>
         <tr>
@@ -98,8 +88,8 @@
         <tbody>
         <tr th:each="file : ${files}">
             <td>
-                <span th:if="${file.type == 'Folder'}" class="folder"></span>
-                <span th:unless="${file.type == 'Folder'}" class="file"></span>
+                <span th:if="${file.type == 'Folder'}" class="folder">📁</span>
+                <span th:unless="${file.type == 'Folder'}" class="file">📝</span>
                 <span th:text="${file.name}">document.pdf</span>
             </td>
             <td th:text="${file.type}">PDF</td>
@@ -107,24 +97,26 @@
             <td th:text="${file.modified}">2025-03-10</td>
             <td class="actions">
 
-                <!-- FILES: View | Download | Delete -->
                 <th:block th:if="${file.type != 'Folder'}">
-                    <a href="#" class="view"
-                       onclick="alert('Preview file')">View</a>
-                    <a href="#"
-                       onclick="alert('Download')">Download</a>
-                    <a href="#" class="delete"
-                       onclick="alert('Delete')">Delete</a>
+                    <a th:href="@{'/api/files/view/' + ${file.id}}" class="view" target="_blank">View</a>
+                    <a th:href="@{'/api/files/download/' + ${file.id}}" class="download">Download</a>
+                    <form th:action="@{'/delete/' + ${file.id}}" method="post" style="display:inline;">
+                        <button type="submit" class="delete"
+                                onclick="return confirm('Are you sure?')"
+                                style="background:none; border:none; cursor:pointer; color:#dc3545; padding:0; font-size:inherit;">
+                            Delete
+                        </button>
+                    </form>
                 </th:block>
 
                 <!-- FOLDERS: Open | Download | Delete -->
                 <th:block th:if="${file.type == 'Folder'}">
                     <a href="#"
-                       onclick="alert('Open folder')">Open</a>
+                       onclick="alert('Open folder — coming soon'); return false;">Open</a>
                     <a href="#"
-                       onclick="alert('Download folder')">Download</a>
+                       onclick="alert('Download folder — coming soon'); return false;">Download</a>
                     <a href="#" class="delete"
-                       onclick="alert('Delete')">Delete</a>
+                       onclick="alert('Delete folder — coming soon'); return false;">Delete</a>
                 </th:block>
 
             </td>
@@ -136,5 +128,11 @@
         BaseNode (temp)
     </p>
 </div>
+<script>
+    const evtSource = new EventSource("/sse");
+    evtSource.addEventListener("refresh", function () {
+        window.location.reload();
+    });
+</script>
 </body>
 </html>

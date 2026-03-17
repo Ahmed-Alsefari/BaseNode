@@ -7,8 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+
 @Repository
-public interface FileRepository extends JpaRepository<FileEntity, Long> {
-    List<FileEntity> findByParent(FileEntity parent);
-    Optional<FileEntity> findByPath(String path);
-}
+public interface FileRepository extends JpaRepository<FileEntity, Long> { }

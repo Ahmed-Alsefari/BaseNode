@@ -9,7 +9,7 @@ package com.BaseNode.BaseNode;
 import com.BaseNode.BaseNode.controller.WebControllerImpl;
 import com.BaseNode.BaseNode.model.UserEntity;
 import com.BaseNode.BaseNode.repository.UserRepository;
-import com.BaseNode.BaseNode.dto.LoginRequest;
+import com.BaseNode.BaseNode.request.LoginRequest;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

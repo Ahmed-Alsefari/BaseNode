@@ -1,5 +1,6 @@
 basenode_db.mv.db
 basenode_db.trace.db
+Uploads/
 .idea/
 target/
 *.class

@@ -1,47 +1,57 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>BaseNode Register</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .login-box { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 300px; }
-    h2 { margin-top: 0; color: #333; }
-    label { display: block; margin: 0.5rem 0 0.2rem; }
-    input[type="text"], input[type="password"] { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
-    button { width: 100%; padding: 0.7rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
-    .error { color: red; margin-bottom: 1rem; }
-    .info { margin-top: 1rem; font-size: 0.9rem; color: #666; text-align: center; }
-  </style>
+    <meta charset="UTF-8">
+    <title>BaseNode Register</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-box { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 300px; }
+        h2 { margin-top: 0; color: #333; }
+        label { display: block; margin: 0.5rem 0 0.2rem; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+        button { width: 100%; padding: 0.7rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
+        .error { color: red; margin-bottom: 1rem; }
+        .info { margin-top: 1rem; font-size: 0.9rem; color: #666; text-align: center; }
+    </style>
 </head>
 <body>
 
 <div class="login-box">
+    <img src="/images/BaseNode.png" alt="logo"
+         style="display:block; margin: 0 auto 1rem auto; max-width: 300px;" />
+    <h2>Create Account</h2>
 
-  <h2>Create Account</h2>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
 
-  <div th:if="${error}" class="error" th:text="${error}"></div>
+    <form th:action="@{/register}" th:object="${registerRequest}" method="post" novalidate>
+        <label for="username">Username:</label>
+        <input type="text" id="username" th:field="*{username}"
+               th:attr="data-error=${#fields.hasErrors('username')} ? ${#fields.errors('username')[0]} : ''" />
 
-  <form th:action="@{/register}" th:object="${registerRequest}" method="post" novalidate>
-    <label for="username">Username:</label>
-    <input type="text" id="username" th:field="*{username}" />
-    <small th:if="${#fields.hasErrors('username')}"
-           th:text="${#fields.errors('username')[0]}"></small>
+        <label for="password">Password:</label>
+        <input type="password" id="password" th:field="*{password}"
+               th:attr="data-error=${#fields.hasErrors('password')} ? ${#fields.errors('password')[0]} : ''" />
 
-    <label for="password">Password:</label>
-    <input type="password" id="password" th:field="*{password}" />
-    <small th:if="${#fields.hasErrors('password')}"
-           th:text="${#fields.errors('password')[0]}"></small>
+        <button type="submit">Register</button>
+    </form>
 
-    <button type="submit">Register</button>
-  </form>
-
-  <p class="info">
-    Already have an account?
-    <a th:href="@{/login}">Login here</a>
-  </p>
+    <p class="info">
+        Already have an account?
+        <a th:href="@{/login}">Login here</a>
+    </p>
 
 </div>
-
+<script>
+    document.querySelectorAll('[data-error]').forEach(function(input) {
+        var msg = input.getAttribute('data-error');
+        if (msg) {
+            input.setCustomValidity(msg);
+            input.reportValidity();
+            input.addEventListener('input', function() {
+                input.setCustomValidity('');
+            });
+        }
+    });
+</script>
 </body>
 </html>

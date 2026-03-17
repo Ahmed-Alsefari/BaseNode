@@ -16,18 +16,20 @@
 </head>
 <body>
 <div class="login-box">
+    <img src="/images/BaseNode.png" alt="logo"
+         style="display:block; margin: 0 auto 1rem auto; max-width: 300px;" />
     <h2>BaseNode Login</h2>
 
     <div th:if="${error}" class="error" th:text="${error}"></div>
 
     <form th:action="@{/login}" th:object="${loginRequest}" method="post">
-        <input type="text" th:field="*{username}" />
-        <small th:if="${#fields.hasErrors('username')}"
-               th:text="${#fields.errors('username')[0]}"></small>
+        <label for="username">Username:</label>
+        <input type="text" id="username" th:field="*{username}"
+               th:attr="data-error=${#fields.hasErrors('username')} ? ${#fields.errors('username')[0]} : ''" />
+
         <label for="password">Password:</label>
-        <input type="password" id="password" th:field="*{password}" />
-        <small th:if="${#fields.hasErrors('password')}"
-               th:text="${#fields.errors('password')[0]}"></small>
+        <input type="password" id="password" th:field="*{password}"
+               th:attr="data-error=${#fields.hasErrors('password')} ? ${#fields.errors('password')[0]} : ''" />
 
         <button type="submit">Login</button>
     </form>
@@ -39,5 +41,17 @@
         (temp)
     </div>
 </div>
+<script>
+    document.querySelectorAll('[data-error]').forEach(function(input) {
+        var msg = input.getAttribute('data-error');
+        if (msg) {
+            input.setCustomValidity(msg);
+            input.reportValidity();
+            input.addEventListener('input', function() {
+                input.setCustomValidity('');
+            });
+        }
+    });
+</script>
 </body>
 </html>
