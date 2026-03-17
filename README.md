@@ -1,7 +1,7 @@
 # BaseNode
 A lightweight, free personal server for remote file access from any browser, keeping your files private and local.
 
-![BaseNode Logo](BaseNode/BaseNode/src/main/resources/static/images/BaseNode.png)
+![BaseNode Logo](BaseNode/src/main/resources/static/images/BaseNode.png)
 
 
 The Problem: 
