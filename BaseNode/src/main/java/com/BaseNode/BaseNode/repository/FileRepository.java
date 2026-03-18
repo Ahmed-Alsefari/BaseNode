@@ -9,4 +9,6 @@ import java.util.Optional;
 
 
 @Repository
-public interface FileRepository extends JpaRepository<FileEntity, Long> { }
+public interface FileRepository extends JpaRepository<FileEntity, Long> {
+    List<FileEntity> findByFolderId(Long folderId);
+}

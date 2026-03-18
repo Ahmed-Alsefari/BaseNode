@@ -39,7 +39,10 @@ public interface WebController {
     String logout(HttpSession session);
 
     @GetMapping("/")
-    String showFileManager(Model model, HttpSession session);
+    String showFileManager(
+            @org.springframework.web.bind.annotation.RequestParam(value = "folderId", required = false) Long folderId,
+            Model model,
+            HttpSession session);
 
     @PostMapping("/delete/{id}")
     String deleteFile(@PathVariable Long id, HttpSession session) throws IOException;

@@ -1,7 +1,9 @@
 package com.BaseNode.BaseNode.controller;
 
 import com.BaseNode.BaseNode.model.FileEntity;
+import com.BaseNode.BaseNode.model.FolderEntity;
 import com.BaseNode.BaseNode.service.FileService;
+import com.BaseNode.BaseNode.service.FolderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -23,10 +25,26 @@ public class FileControllerImpl implements FileController {
     @Autowired
     private FileService fileService;
 
+    @Autowired
+    private FolderService folderService;
+
     @PostMapping("/upload")
     @Override
-    public ResponseEntity<String> uploadFile(@RequestParam("file") List<MultipartFile> files) {
+    public ResponseEntity<String> uploadFile(@RequestParam("file") List<MultipartFile> files, @RequestParam(value = "folderId", required = false) Long folderId) {
         try {
+            if (folderId != null) {
+                FolderEntity folder = folderService.getFolder(folderId);
+                if (folder != null) {
+                    for (MultipartFile file : files) {
+                        if (!file.isEmpty()) {
+                            fileService.uploadFileToFolder(file, folderId, folder.getFolderPath());
+                        }
+                    }
+                    return ResponseEntity.status(302)
+                            .header("Location", "/?folderId=" + folderId)
+                            .build();
+                }
+            }
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
                     fileService.uploadFile(file);

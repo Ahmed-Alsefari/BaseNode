@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.List;
 
 public interface FileController {
-    ResponseEntity<String> uploadFile(List<MultipartFile> files);
+    ResponseEntity<String> uploadFile(List<MultipartFile> files, Long folderId);
     ResponseEntity<List<FileEntity>> listFiles();
     ResponseEntity<byte[]> viewFile(Long id) throws IOException;
     ResponseEntity<byte[]> downloadFile(Long id) throws IOException;

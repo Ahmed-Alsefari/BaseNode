@@ -28,50 +28,52 @@
             font-size: 0.95rem;
         }
         .breadcrumb strong { margin-right: 6px; }
-        .breadcrumb a {
-            color: #007bff;
-            text-decoration: none;
-            font-weight: bold;
-        }
+        .breadcrumb a { color: #007bff; text-decoration: none; font-weight: bold; }
         .breadcrumb a:hover { text-decoration: underline; }
         .breadcrumb .separator { margin: 0 4px; color: #666; }
         .breadcrumb .current { color: #333; }
 
         .upload-form { display: inline; }
         .file-input { display: none; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 8px; padding: 24px 28px; width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .modal h3 { margin: 0 0 16px; font-size: 1rem; color: #333; }
+        .modal input[type="text"] { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; outline: none; box-sizing: border-box; }
+        .modal input[type="text"]:focus { border-color: #007bff; }
+        .modal-error { color: #dc3545; font-size: 13px; margin-top: 5px; display: none; }
+        .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+        .btn-cancel { padding: 7px 16px; background: #f0f0f0; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-create { padding: 7px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>
         BaseNode File Manager
-
-        <img src="/images/BaseNode.png" alt="logo"
-             style="height: 75px; vertical-align: middle; margin-right: 150px;" />
-
+        <img src="/images/BaseNode.png" alt="logo" style="height: 75px; vertical-align: middle; margin-right: 150px;" />
     </h1>
     <div class="toolbar">
-        <form method="post" action="/api/files/upload" enctype="multipart/form-data" class="upload-form">
+        <form action="/api/files/upload" method="post" enctype="multipart/form-data" class="upload-form">
             <input type="file" name="file" id="fileInput" class="file-input" multiple onchange="this.form.submit()" />
+            <input type="hidden" name="folderId" th:value="${currentFolderId}" />
             <button type="button" class="upload" onclick="document.getElementById('fileInput').click()">Upload File</button>
         </form>
-        <a href="#" onclick="alert('New Folder — coming soon')">New Folder</a>
+        <a href="#" onclick="openNewFolderModal(); return false;">New Folder</a>
         <a href="/logout" style="background: #dc3545;">Logout</a>
     </div>
 
     <div class="breadcrumb">
         <strong>Current Path:</strong>
         <a href="/">Home</a>
-        <th:block th:if="${currentPath != null and currentPath != '/'}">
-            <span th:each="segment, stat : ${currentPath.split('/')}"
-                  th:if="${!segment.isEmpty()}">
-                <span class="separator">/</span>
-                <span th:if="${stat.last}" class="current" th:text="${segment}"></span>
-                <a th:unless="${stat.last}"
-                   href="#"
-                   th:text="${segment}"
-                   onclick="alert('Navigate — coming soon'); return false;"></a>
-            </span>
+        <th:block th:each="crumb, stat : ${breadcrumbs}">
+            <span class="separator">/</span>
+            <span th:if="${stat.last}" class="current" th:text="${crumb.name}"></span>
+            <a th:unless="${stat.last}"
+               th:href="@{'/?folderId=' + ${crumb.folderId}}"
+               th:text="${crumb.name}"></a>
         </th:block>
     </div>
 
@@ -86,6 +88,28 @@
         </tr>
         </thead>
         <tbody>
+
+        <!-- Folders -->
+        <tr th:each="folder : ${folders}">
+            <td>
+                <span class="folder">📁</span>
+                <a class="folder" th:href="@{'/?folderId=' + ${folder.id}}" th:text="${folder.name}">Folder</a>
+            </td>
+            <td>Folder</td>
+            <td>—</td>
+            <td th:text="${folder.createdDate != null ? #temporals.format(folder.createdDate, 'yyyy-MM-dd | HH:mm') : '—'}">—</td>
+            <td class="actions">
+                <a th:href="@{'/?folderId=' + ${folder.id}}">Open</a>
+                <a th:href="@{'/api/folders/download/' + ${folder.id}}">Download</a>
+                <form th:action="@{'/api/folders/delete/' + ${folder.id}}" method="post" style="display:inline;">
+                    <button type="submit" class="delete"
+                            onclick="return confirm('Are you sure?')"
+                            style="background:none; border:none; cursor:pointer; color:#dc3545; padding:0; font-size:inherit;">Delete</button>
+                </form>
+            </td>
+        </tr>
+
+        <!-- Files -->
         <tr th:each="file : ${files}">
             <td>
                 <span th:if="${file.type == 'Folder'}" class="folder">📁</span>
@@ -96,43 +120,77 @@
             <td th:text="${file.size}">120 KB</td>
             <td th:text="${file.modified}">2025-03-10</td>
             <td class="actions">
-
-                <th:block th:if="${file.type != 'Folder'}">
-                    <a th:href="@{'/api/files/view/' + ${file.id}}" class="view" target="_blank">View</a>
-                    <a th:href="@{'/api/files/download/' + ${file.id}}" class="download">Download</a>
-                    <form th:action="@{'/delete/' + ${file.id}}" method="post" style="display:inline;">
-                        <button type="submit" class="delete"
-                                onclick="return confirm('Are you sure?')"
-                                style="background:none; border:none; cursor:pointer; color:#dc3545; padding:0; font-size:inherit;">
-                            Delete
-                        </button>
-                    </form>
-                </th:block>
-
-                <!-- FOLDERS: Open | Download | Delete -->
-                <th:block th:if="${file.type == 'Folder'}">
-                    <a href="#"
-                       onclick="alert('Open folder — coming soon'); return false;">Open</a>
-                    <a href="#"
-                       onclick="alert('Download folder — coming soon'); return false;">Download</a>
-                    <a href="#" class="delete"
-                       onclick="alert('Delete folder — coming soon'); return false;">Delete</a>
-                </th:block>
-
+                <a th:href="@{'/api/files/view/' + ${file.id}}" class="view" target="_blank">View</a>
+                <a th:href="@{'/api/files/download/' + ${file.id}}">Download</a>
+                <form th:action="@{'/delete/' + ${file.id}}" method="post" style="display:inline;">
+                    <button type="submit" class="delete"
+                            onclick="return confirm('Are you sure?')"
+                            style="background:none; border:none; cursor:pointer; color:#dc3545; padding:0; font-size:inherit;">Delete</button>
+                </form>
             </td>
         </tr>
+
         </tbody>
     </table>
 
-    <p style="margin-top:20px; font-size:0.9rem; color:#666; text-align:center;">
-        BaseNode (temp)
-    </p>
+    <p style="margin-top:20px; font-size:0.9rem; color:#666; text-align:center;">BaseNode (temp)</p>
 </div>
+
+<!-- New Folder Modal -->
+<div class="modal-overlay" id="newFolderModal">
+    <div class="modal">
+        <h3>New Folder</h3>
+        <form id="newFolderForm" action="/api/folders/create" method="post">
+            <input type="hidden" name="parentId" th:value="${currentFolderId}" />
+            <input type="text" id="folderNameInput" name="name" placeholder="Folder name..."
+                   maxlength="100"
+                   onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitNewFolder(); }"
+                   oninput="document.getElementById('folderError').style.display='none'" />
+            <div class="modal-error" id="folderError">Please enter a valid folder name.</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeNewFolderModal()">Cancel</button>
+                <button type="button" class="btn-create" onclick="submitNewFolder()">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     const evtSource = new EventSource("/sse");
-    evtSource.addEventListener("refresh", function () {
-        window.location.reload();
+    evtSource.addEventListener("refresh", function () { window.location.reload(); });
+
+    function openNewFolderModal() {
+        document.getElementById('folderNameInput').value = '';
+        document.getElementById('folderError').style.display = 'none';
+        document.getElementById('newFolderModal').classList.add('active');
+        setTimeout(() => document.getElementById('folderNameInput').focus(), 80);
+    }
+
+    function closeNewFolderModal() {
+        document.getElementById('newFolderModal').classList.remove('active');
+    }
+
+    document.getElementById('newFolderModal').addEventListener('click', function(e) {
+        if (e.target === this) closeNewFolderModal();
     });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeNewFolderModal();
+    });
+
+    function submitNewFolder() {
+        const nameInput = document.getElementById('folderNameInput');
+        const errorEl   = document.getElementById('folderError');
+        const name = nameInput.value.trim();
+
+        if (!name || name.includes('/') || name.includes('\\') || name.includes('..')) {
+            errorEl.style.display = 'block';
+            nameInput.focus();
+            return;
+        }
+
+        document.getElementById('newFolderForm').submit();
+    }
 </script>
 </body>
 </html>

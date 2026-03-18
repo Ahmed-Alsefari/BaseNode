@@ -7,7 +7,9 @@
 
     public interface FileService {
         FileEntity uploadFile(MultipartFile file) throws IOException;
+        FileEntity uploadFileToFolder(MultipartFile file, Long folderId, String folderPhysicalPath) throws IOException;
         List<FileEntity> getAllFiles();
+        List<FileEntity> getFilesByFolder(Long folderId);
         FileEntity getFile(Long id);
         void deleteFile(Long id) throws IOException;
     }

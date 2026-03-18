@@ -27,6 +27,9 @@ public class FileEntity {
     @Column(nullable = false)
     private LocalDateTime uploadDate;
 
+    @Column
+    private Long folderId;
+
     public FileEntity() {}
 
     public FileEntity(String fileName, String filePath, long fileSize, String contentType) {
@@ -35,6 +38,15 @@ public class FileEntity {
         this.fileSize = fileSize;
         this.contentType = contentType;
         this.uploadDate = LocalDateTime.now();
+        this.folderId = null;
+    }
+    public FileEntity(String fileName, String filePath, long fileSize, String contentType, Long folderId) {
+        this.fileName = fileName;
+        this.filePath = filePath;
+        this.fileSize = fileSize;
+        this.contentType = contentType;
+        this.uploadDate = LocalDateTime.now();
+        this.folderId = folderId;
     }
 
     public Long getId() { return id; }
@@ -54,4 +66,6 @@ public class FileEntity {
 
     public LocalDateTime getUploadDate() { return uploadDate; }
     public void setUploadDate(LocalDateTime uploadDate) { this.uploadDate = uploadDate; }
+    public Long getFolderId() { return folderId; }
+    public void setFolderId(Long folderId) { this.folderId = folderId; }
 }

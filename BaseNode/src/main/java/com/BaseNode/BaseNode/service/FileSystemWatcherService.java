@@ -20,6 +20,9 @@ public class FileSystemWatcherService {
     private FileRepository fileRepository;
 
     @Autowired
+    private com.BaseNode.BaseNode.repository.FolderRepository folderRepository;
+
+    @Autowired
     private StorageConfig storageConfig;
 
     private WatchService watchService;
@@ -94,6 +97,7 @@ public class FileSystemWatcherService {
 
         if (Files.isDirectory(fullPath)) return;
 
+        if (!fullPath.getParent().equals(storageConfig.getUploadPath())) return;
         if (uploadingFiles.contains(fullPath.toString())) return;
 
         String pathStr = fullPath.toString();
@@ -124,9 +128,19 @@ public class FileSystemWatcherService {
     }
 
     private void onFileDeleted(Path fullPath) {
-
         String pathStr = fullPath.toString();
 
+        folderRepository.findByFolderPath(pathStr).ifPresent(folder -> {
+            folderRepository.findByFolderPathStartingWith(pathStr).forEach(f -> {
+                fileRepository.findByFolderId(f.getId()).forEach(fileRepository::delete);
+                folderRepository.delete(f);
+            });
+            fileRepository.findByFolderId(folder.getId()).forEach(fileRepository::delete);
+            folderRepository.delete(folder);
+            System.out.println("[Watcher] Folder removed from DB: " + folder.getName());
+            notifyBrowser();
+            return;
+        });
         for (FileEntity entity : fileRepository.findAll()) {
             if (entity.getFilePath().equals(pathStr)) {
                 fileRepository.delete(entity);

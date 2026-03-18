@@ -1,12 +1,14 @@
 package com.BaseNode.BaseNode.controller;
 
 import com.BaseNode.BaseNode.model.FileEntity;
+import com.BaseNode.BaseNode.model.FolderEntity;
 import com.BaseNode.BaseNode.request.LoginRequest;
 import com.BaseNode.BaseNode.request.RegisterRequest;
 import com.BaseNode.BaseNode.model.UserEntity;
 import com.BaseNode.BaseNode.repository.UserRepository;
 import com.BaseNode.BaseNode.service.FileService;
 import com.BaseNode.BaseNode.service.FileSystemWatcherService;
+import com.BaseNode.BaseNode.service.FolderService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,14 +20,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 
 import java.io.IOException;
-import java.text.DecimalFormatSymbols;
-
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +40,9 @@ public class WebControllerImpl implements WebController {
 
     @Autowired
     private FileService fileService;
+
+    @Autowired
+    private FolderService folderService;
 
     public WebControllerImpl(UserRepository userRepository, PasswordEncoder encoder) {
         this.userRepository = userRepository;
@@ -112,37 +115,63 @@ public class WebControllerImpl implements WebController {
 
     @Override
     @GetMapping("/")
-    public String showFileManager(Model model, HttpSession session) {
+    public String showFileManager(
+            @RequestParam(value = "folderId", required = false) Long folderId,
+            Model model,
+            HttpSession session) {
+
         if (session.getAttribute(SESSION_USER) == null) {
             return "redirect:/login";
         }
 
-        List<FileEntity> fileEntities = fileService.getAllFiles();
-        List<FileItem> files = new ArrayList<>();
+        List<FileEntity> fileEntities = (folderId == null)
+                ? fileService.getAllFiles().stream()
+                    .filter(f -> f.getFolderId() == null).toList()
+                : fileService.getFilesByFolder(folderId);
 
+        List<FileItem> files = new ArrayList<>();
         for (FileEntity entity : fileEntities) {
             String size = formatFileSize(entity.getFileSize());
             String modified = entity.getUploadDate()
                     .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd | HH:mm"));
-            files.add(new FileItem(
-                    entity.getId(),
-                    entity.getFileName(),
-                    entity.getContentType(),
-                    size,
-                    modified
-            ));
+            files.add(new FileItem(entity.getId(), entity.getFileName(),
+                    entity.getContentType(), size, modified));
         }
 
+        List<FolderEntity> subFolders = folderService.getFoldersByParent(folderId);
+
+        List<BreadcrumbItem> breadcrumbs = buildBreadcrumbs(folderId);
+
+        String uploadAction = (folderId == null)
+                ? "/api/files/upload"
+                : "/api/files/upload/folder/" + folderId;
+
         model.addAttribute("files", files);
-        model.addAttribute("currentPath", "/");
+        model.addAttribute("folders", subFolders);
+        model.addAttribute("currentFolderId", folderId);
+        model.addAttribute("breadcrumbs", breadcrumbs);
+        model.addAttribute("uploadAction", uploadAction);
         model.addAttribute("username", session.getAttribute(SESSION_USER));
 
         return "index";
     }
 
+    private List<BreadcrumbItem> buildBreadcrumbs(Long folderId) {
+        List<BreadcrumbItem> crumbs = new ArrayList<>();
+        Long current = folderId;
+
+        while (current != null) {
+            FolderEntity f = folderService.getFolder(current);
+            if (f == null) break;
+            crumbs.add(0, new BreadcrumbItem(f.getName(), f.getId()));
+            current = f.getParentId();
+        }
+        return crumbs;
+    }
+
     private String formatFileSize(long size) {
         if (size <= 0) return "0 B";
-        final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
+        final String[] units = {"B", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
         return new DecimalFormat("#,##0.#", DecimalFormatSymbols.getInstance(java.util.Locale.ENGLISH))
                 .format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
@@ -154,8 +183,10 @@ public class WebControllerImpl implements WebController {
         if (session.getAttribute(SESSION_USER) == null) {
             return "redirect:/login";
         }
+        FileEntity entity = fileService.getFile(id);
+        Long folderId = (entity != null) ? entity.getFolderId() : null;
         fileService.deleteFile(id);
-        return "redirect:/";
+        return (folderId != null) ? "redirect:/?folderId=" + folderId : "redirect:/";
     }
 
     @Autowired
@@ -165,7 +196,6 @@ public class WebControllerImpl implements WebController {
     public SseEmitter subscribe() {
         return watcherService.subscribe();
     }
-
     public static class FileItem {
         private final Long id;
         private final String name;
@@ -186,5 +216,17 @@ public class WebControllerImpl implements WebController {
         public String getType() { return type; }
         public String getSize() { return size; }
         public String getModified() { return modified; }
+    }
+    public static class BreadcrumbItem {
+        private final String name;
+        private final Long folderId;
+
+        public BreadcrumbItem(String name, Long folderId) {
+            this.name = name;
+            this.folderId = folderId;
+        }
+
+        public String getName()    { return name; }
+        public Long getFolderId()  { return folderId; }
     }
 }
