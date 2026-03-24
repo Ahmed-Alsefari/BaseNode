@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 
+import com.BaseNode.BaseNode.factory.EntityFactory;
+
 @Service
 public class FileSystemWatcherService {
 
@@ -117,7 +119,7 @@ public class FileSystemWatcherService {
 
             if (contentType == null) contentType = "application/octet-stream";
 
-            FileEntity entity = new FileEntity(name, pathStr, size, contentType);
+            FileEntity entity = EntityFactory.createFile(name, pathStr, size, contentType);
             fileRepository.save(entity);
             System.out.println("[Watcher] File added to DB: " + name);
             notifyBrowser();
@@ -179,7 +181,7 @@ public class FileSystemWatcherService {
 
                 if (contentType == null) contentType = "application/octet-stream";
 
-                FileEntity entity = new FileEntity(name, pathStr, size, contentType);
+                FileEntity entity = EntityFactory.createFile(name, pathStr, size, contentType);
                 fileRepository.save(entity);
                 System.out.println("[Sync] Added file to DB: " + name);
             }

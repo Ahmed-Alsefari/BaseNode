@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.BaseNode.BaseNode.factory.EntityFactory;
+
 @Controller
 public class WebControllerImpl implements WebController {
 
@@ -52,7 +54,7 @@ public class WebControllerImpl implements WebController {
     @Override
     @GetMapping("/login")
     public String showLoginPage(Model model) {
-        model.addAttribute("loginRequest", new LoginRequest());
+        model.addAttribute("loginRequest", EntityFactory.createLoginRequest());
         return "login";
     }
 
@@ -79,7 +81,7 @@ public class WebControllerImpl implements WebController {
     @Override
     @GetMapping("/register")
     public String showRegisterPage(Model model) {
-        model.addAttribute("registerRequest", new RegisterRequest());
+        model.addAttribute("registerRequest", EntityFactory.createRegisterRequest());
         return "register";
     }
 
@@ -96,7 +98,7 @@ public class WebControllerImpl implements WebController {
             return "register";
         }
 
-        UserEntity user = new UserEntity(
+        UserEntity user = EntityFactory.createUser(
                 registerRequest.getUsername(),
                 encoder.encode(registerRequest.getPassword()),
                 "USER"

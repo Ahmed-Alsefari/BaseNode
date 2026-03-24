@@ -13,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import com.BaseNode.BaseNode.factory.EntityFactory;
+
 @Service
 public class FileServiceImpl implements FileService {
 
@@ -60,7 +62,7 @@ public class FileServiceImpl implements FileService {
             }).start();
         }
 
-        FileEntity entity = new FileEntity(
+        FileEntity entity = EntityFactory.createFile(
                 targetPath.getFileName().toString(),
                 pathStr,
                 file.getSize(),
@@ -114,7 +116,7 @@ public class FileServiceImpl implements FileService {
             }).start();
         }
 
-        FileEntity entity = new FileEntity(
+        FileEntity entity = EntityFactory.createFileInFolder(
                 targetPath.getFileName().toString(),
                 pathStr,
                 file.getSize(),

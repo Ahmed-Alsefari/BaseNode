@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.BaseNode.BaseNode.factory.EntityFactory;
+
 @Service
 public class FolderServiceImpl implements FolderService {
 
@@ -39,7 +41,7 @@ public class FolderServiceImpl implements FolderService {
             Files.createDirectories(folderPath);
         }
 
-        FolderEntity folder = new FolderEntity(name, folderPath.toString(), parentId);
+        FolderEntity folder = EntityFactory.createFolder(name, folderPath.toString(), parentId);
         return folderRepository.save(folder);
     }
 
