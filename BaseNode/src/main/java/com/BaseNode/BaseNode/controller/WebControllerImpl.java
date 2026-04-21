@@ -9,6 +9,7 @@ import com.BaseNode.BaseNode.repository.UserRepository;
 import com.BaseNode.BaseNode.service.FileService;
 import com.BaseNode.BaseNode.service.FileSystemWatcherService;
 import com.BaseNode.BaseNode.service.FolderService;
+import com.BaseNode.BaseNode.service.SecureFileServiceProxy;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +58,7 @@ public class WebControllerImpl implements WebController {
         model.addAttribute("loginRequest", EntityFactory.createLoginRequest());
         return "login";
     }
-
+    // take the name and pass 1# search for the user in the database 2# chack for the password 3# create session for user .... #A
     @Override
     @PostMapping("/login")
     public String processLogin(@Valid @ModelAttribute("loginRequest") LoginRequest loginRequest,
@@ -69,6 +70,7 @@ public class WebControllerImpl implements WebController {
         Optional<UserEntity> userOpt = userRepository.findByUsername(loginRequest.getUsername());
         if (userOpt.isPresent()) {
             String dbPassword = userOpt.get().getPassword();
+            // match the password hash with stored db_hash #A
             if (encoder.matches(loginRequest.getPassword(), dbPassword)) {
                 session.setAttribute(SESSION_USER, loginRequest.getUsername());
                 return "redirect:/";
@@ -87,19 +89,21 @@ public class WebControllerImpl implements WebController {
 
     @Override
     @PostMapping("/register")
+    // if validation errors exist #A
     public String processRegister(@Valid @ModelAttribute("registerRequest") RegisterRequest registerRequest,
                                   BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
             return "register";
         }
-
+        // check if the user is already exists #A
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             model.addAttribute("error", "Username already exists.");
             return "register";
         }
-
+        // if the user not exists #A
         UserEntity user = EntityFactory.createUser(
                 registerRequest.getUsername(),
+                //encode pass #A
                 encoder.encode(registerRequest.getPassword()),
                 "USER"
         );
@@ -115,46 +119,19 @@ public class WebControllerImpl implements WebController {
         return "redirect:/login";
     }
 
-    @Override
-    @GetMapping("/")
-    public String showFileManager(
-            @RequestParam(value = "folderId", required = false) Long folderId,
-            Model model,
-            HttpSession session) {
 
-        if (session.getAttribute(SESSION_USER) == null) {
-            return "redirect:/login";
-        }
+    @GetMapping("/")
+    // move to SecureFileServiceProxy #A
+    public String showFileManager(Long folderId, Model model, HttpSession session) {
+        FileService secureService = new SecureFileServiceProxy(fileService, session);
 
         List<FileEntity> fileEntities = (folderId == null)
-                ? fileService.getAllFiles().stream()
-                    .filter(f -> f.getFolderId() == null).toList()
-                : fileService.getFilesByFolder(folderId);
+                ? secureService.getAllFiles().stream()
+                .filter(f -> f.getFolderId() == null)
+                .toList()
+                : secureService.getFilesByFolder(folderId);
 
-        List<FileItem> files = new ArrayList<>();
-        for (FileEntity entity : fileEntities) {
-            String size = formatFileSize(entity.getFileSize());
-            String modified = entity.getUploadDate()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd | HH:mm"));
-            files.add(new FileItem(entity.getId(), entity.getFileName(),
-                    entity.getContentType(), size, modified));
-        }
-
-        List<FolderEntity> subFolders = folderService.getFoldersByParent(folderId);
-
-        List<BreadcrumbItem> breadcrumbs = buildBreadcrumbs(folderId);
-
-        String uploadAction = (folderId == null)
-                ? "/api/files/upload"
-                : "/api/files/upload/folder/" + folderId;
-
-        model.addAttribute("files", files);
-        model.addAttribute("folders", subFolders);
-        model.addAttribute("currentFolderId", folderId);
-        model.addAttribute("breadcrumbs", breadcrumbs);
-        model.addAttribute("uploadAction", uploadAction);
-        model.addAttribute("username", session.getAttribute(SESSION_USER));
-
+        model.addAttribute("files", fileEntities);
         return "index";
     }
 
@@ -182,12 +159,13 @@ public class WebControllerImpl implements WebController {
     @Override
     @PostMapping("/delete/{id}")
     public String deleteFile(@PathVariable Long id, HttpSession session) throws IOException {
-        if (session.getAttribute(SESSION_USER) == null) {
-            return "redirect:/login";
-        }
-        FileEntity entity = fileService.getFile(id);
+        FileService secureService = new SecureFileServiceProxy(fileService, session);
+
+        FileEntity entity = secureService.getFile(id);
         Long folderId = (entity != null) ? entity.getFolderId() : null;
-        fileService.deleteFile(id);
+
+        secureService.deleteFile(id);
+
         return (folderId != null) ? "redirect:/?folderId=" + folderId : "redirect:/";
     }
 
