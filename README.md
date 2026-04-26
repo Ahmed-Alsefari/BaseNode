@@ -1,10 +1,9 @@
 <div align="center">
 
-<img src="BaseNode/src/main/resources/static/images/BaseNode.png" alt="BaseNode Logo" width="180"/>
+<img src="BaseNode/src/main/resources/static/images/BaseNode.png" alt="BaseNode Logo" width="1200"/>
 
-# BaseNode
 
-**A lightweight personal file server — access your files from any browser, anywhere.**
+**A lightweight personal file server - access your files from any browser, anywhere.**
 
 ![Java](https://img.shields.io/badge/Java-25-orange?style=flat-square&logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen?style=flat-square&logo=springboot)
@@ -103,6 +102,7 @@ server.tomcat.max-swallow-size=-1
 ```
 BaseNode/
 ├── src/main/java/com/BaseNode/BaseNode/
+│   ├── composite/        # Composite pattern (file system tree)
 │   ├── controller/       # Web + API controllers
 │   ├── service/          # Business logic + file watcher
 │   ├── model/            # JPA entities
@@ -120,8 +120,10 @@ BaseNode/
 
 ## Design Patterns Used
 
-- **Factory Pattern** — `EntityFactory` centralizes object creation for files, folders, users, and requests
-- **Proxy Pattern** — `SecureFileServiceProxy` wraps file service calls with session-based access control
+- **Factory Pattern** — `EntityFactory` centralizes object creation for files, folders, users, and requests  
+- **Proxy Pattern** — `SecureFileServiceProxy` wraps file service calls with session-based access control  
+- **Composite Pattern** — `FileSystemTree` builds a tree of folders and files, allowing the total size of any folder to be calculated recursively across all nested subfolders  
+
 
 ---
 
@@ -138,5 +140,5 @@ MIT — free to use, modify, and share.
 ---
 
 <div align="center">
-  Made by <a href="https://github.com/Ahmed-Alsefari/BaseNode">BaseNode team</a>
+  Made by <a href="https://github.com/Ahmed-Alsefari/BaseNode">BaseNode team</a> with Love <3
 </div>
