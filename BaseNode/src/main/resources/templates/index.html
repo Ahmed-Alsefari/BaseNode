@@ -63,6 +63,12 @@
         </form>
         <a href="#" onclick="openNewFolderModal(); return false;">New Folder</a>
         <a href="/logout" style="background: #dc3545;">Logout</a>
+
+        <span th:if="${param.uploadError != null}"
+              style="color:#dc3545; font-weight:bold; font-size:13px; margin-left:12px; background:#fff0f0; padding:6px 10px; border-radius:4px; border:1px solid #dc3545;">
+            ⚠ <span th:text="${param.uploadError}"></span>
+        </span>
+
     </div>
 
     <div class="breadcrumb">
@@ -112,13 +118,12 @@
         <!-- Files -->
         <tr th:each="file : ${files}">
             <td>
-                <span th:if="${file.type == 'Folder'}" class="folder">📁</span>
-                <span th:unless="${file.type == 'Folder'}" class="file">📝</span>
-                <span th:text="${file.name}">document.pdf</span>
+                <span class="file">📄</span>
+                <span th:text="${file.fileName}">document.pdf</span>
             </td>
-            <td th:text="${file.type}">PDF</td>
-            <td th:text="${file.size}">120 KB</td>
-            <td th:text="${file.modified}">2025-03-10</td>
+            <td th:text="${file.contentType}">application/pdf</td>
+            <td th:text="${file.fileSize}">120 KB</td>
+            <td th:text="${file.uploadDate != null ? #temporals.format(file.uploadDate, 'yyyy-MM-dd | HH:mm') : '—'}">—</td>
             <td class="actions">
                 <a th:href="@{'/api/files/view/' + ${file.id}}" class="view" target="_blank">View</a>
                 <a th:href="@{'/api/files/download/' + ${file.id}}">Download</a>
@@ -155,9 +160,18 @@
     </div>
 </div>
 
+
 <script>
-    const evtSource = new EventSource("/sse");
+    function connectSSE() {
+    const evtSource = new EventSource("/events");
     evtSource.addEventListener("refresh", function () { window.location.reload(); });
+    evtSource.addEventListener("ping", function () { console.log("[SSE] connected"); });
+    evtSource.onerror = function () {
+        evtSource.close();
+        setTimeout(connectSSE, 3000); // reconnect after 3s if dropped
+    };
+}
+connectSSE();
 
     function openNewFolderModal() {
         document.getElementById('folderNameInput').value = '';
@@ -191,6 +205,10 @@
 
         document.getElementById('newFolderForm').submit();
     }
+
+
+
+
 </script>
 </body>
 </html>

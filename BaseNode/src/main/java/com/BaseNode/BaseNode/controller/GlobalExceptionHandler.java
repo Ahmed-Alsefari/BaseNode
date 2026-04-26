@@ -10,4 +10,14 @@ public class GlobalExceptionHandler {
     public String handleSecurityException() {
         return "redirect:/login";
     }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public String handleMaxUploadSize(jakarta.servlet.http.HttpServletRequest request) {
+        String referer = request.getHeader("Referer");
+        String redirect = (referer != null && !referer.isEmpty()) ? referer : "/";
+        String separator = redirect.contains("?") ? "&" : "?";
+        String message = "File+exceeds+the+upload+limit";
+        return "redirect:" + redirect + separator + "uploadError=" + message;
+    }
+
 }

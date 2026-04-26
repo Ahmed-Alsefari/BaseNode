@@ -22,11 +22,12 @@ public class BaseNodeApplication {
 
 		SpringApplication.run(BaseNodeApplication.class, args);
 		System.out.println("\n" +
-				"╔═════════════════════════════════════╗\n" +
-				"║         BaseNode Started!           ║\n" +
-				"║-------------------------------------║\n" +
-				"║  >>> Local: http://localhost:8080   ║\n" +
-				"╚═════════════════════════════════════╝\n"
+				"╔════════════════════════════════════════════════════╗\n" +
+				"║               ~ BaseNode Started ~                 ║\n" +
+				"║----------------------------------------------------║\n" +
+				"║   >>> Local: http://localhost:8080                 ║\n" +
+				"║   >>> Local DB: http://localhost:8080/h2-console   ║\n" +
+				"╚════════════════════════════════════════════════════╝\n"
 		);
 
 	}

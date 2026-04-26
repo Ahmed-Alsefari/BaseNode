@@ -10,6 +10,7 @@ import com.BaseNode.BaseNode.service.FileService;
 import com.BaseNode.BaseNode.service.FileSystemWatcherService;
 import com.BaseNode.BaseNode.service.FolderService;
 import com.BaseNode.BaseNode.service.SecureFileServiceProxy;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,9 @@ public class WebControllerImpl implements WebController {
 
     @Autowired
     private FolderService folderService;
+
+    @Autowired
+    private FileSystemWatcherService watcherService;
 
     public WebControllerImpl(UserRepository userRepository, PasswordEncoder encoder) {
         this.userRepository = userRepository;
@@ -119,10 +123,13 @@ public class WebControllerImpl implements WebController {
         return "redirect:/login";
     }
 
-
+    @Override
     @GetMapping("/")
-    // move to SecureFileServiceProxy #A
-    public String showFileManager(Long folderId, Model model, HttpSession session) {
+    public String showFileManager(
+            @RequestParam(value = "folderId", required = false) Long folderId,
+            Model model,
+            HttpSession session) {
+
         FileService secureService = new SecureFileServiceProxy(fileService, session);
 
         List<FileEntity> fileEntities = (folderId == null)
@@ -131,7 +138,22 @@ public class WebControllerImpl implements WebController {
                 .toList()
                 : secureService.getFilesByFolder(folderId);
 
-        model.addAttribute("files", fileEntities);
+        List<FolderEntity> folders = folderService.getFoldersByParent(folderId);
+
+        List<java.util.Map<String, Object>> fileItems = fileEntities.stream().map(f -> {
+            java.util.Map<String, Object> item = new java.util.HashMap<>();
+            item.put("id", f.getId());
+            item.put("fileName", f.getFileName());
+            item.put("contentType", f.getContentType());
+            item.put("fileSize", formatFileSize(f.getFileSize()));
+            item.put("uploadDate", f.getUploadDate());
+            return item;
+        }).toList();
+
+        model.addAttribute("files", fileItems);
+        model.addAttribute("folders", folders);
+        model.addAttribute("currentFolderId", folderId);
+        model.addAttribute("breadcrumbs", buildBreadcrumbs(folderId));
         return "index";
     }
 
@@ -169,13 +191,7 @@ public class WebControllerImpl implements WebController {
         return (folderId != null) ? "redirect:/?folderId=" + folderId : "redirect:/";
     }
 
-    @Autowired
-    private FileSystemWatcherService watcherService;
 
-    @GetMapping("/sse")
-    public SseEmitter subscribe() {
-        return watcherService.subscribe();
-    }
     public static class FileItem {
         private final Long id;
         private final String name;
@@ -208,5 +224,11 @@ public class WebControllerImpl implements WebController {
 
         public String getName()    { return name; }
         public Long getFolderId()  { return folderId; }
+    }
+    @GetMapping("/events")
+    public SseEmitter streamEvents(HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("X-Accel-Buffering", "no");
+        return watcherService.subscribe();
     }
 }
