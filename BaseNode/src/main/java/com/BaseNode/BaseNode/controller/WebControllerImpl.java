@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Optional;
 
 import com.BaseNode.BaseNode.factory.EntityFactory;
+import com.BaseNode.BaseNode.composite.FileSystemTree;
+import com.BaseNode.BaseNode.composite.FolderComposite;
 
 @Controller
 public class WebControllerImpl implements WebController {
@@ -50,6 +52,9 @@ public class WebControllerImpl implements WebController {
 
     @Autowired
     private FileSystemWatcherService watcherService;
+
+    @Autowired
+    private FileSystemTree fileSystemTree;
 
     public WebControllerImpl(UserRepository userRepository, PasswordEncoder encoder) {
         this.userRepository = userRepository;
@@ -140,6 +145,17 @@ public class WebControllerImpl implements WebController {
 
         List<FolderEntity> folders = folderService.getFoldersByParent(folderId);
 
+        List<java.util.Map<String, Object>> folderItems = folders.stream().map(folder -> {
+            java.util.Map<String, Object> item = new java.util.HashMap<>();
+            item.put("id", folder.getId());
+            item.put("name", folder.getName());
+            item.put("parentId", folder.getParentId());
+            item.put("createdDate", folder.getCreatedDate());
+            FolderComposite composite = fileSystemTree.buildFromFolder(folder.getId());
+            item.put("totalSize", formatFileSize(composite.getSize()));
+            return item;
+        }).toList();
+
         List<java.util.Map<String, Object>> fileItems = fileEntities.stream().map(f -> {
             java.util.Map<String, Object> item = new java.util.HashMap<>();
             item.put("id", f.getId());
@@ -151,7 +167,7 @@ public class WebControllerImpl implements WebController {
         }).toList();
 
         model.addAttribute("files", fileItems);
-        model.addAttribute("folders", folders);
+        model.addAttribute("folders", folderItems);
         model.addAttribute("currentFolderId", folderId);
         model.addAttribute("breadcrumbs", buildBreadcrumbs(folderId));
         return "index";
