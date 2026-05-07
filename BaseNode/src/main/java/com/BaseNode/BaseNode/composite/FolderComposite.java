@@ -46,7 +46,7 @@ public class FolderComposite implements FileSystemNode {
     @Override
     public void add(FileSystemNode node) {
         if (node == null) {
-            throw new IllegalArgumentException("لا يمكن إضافة عنصر null إلى المجلد.");
+            throw new IllegalArgumentException("Cannot add a null node to the folder.");
         }
         children.add(node);
     }

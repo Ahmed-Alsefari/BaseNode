@@ -42,7 +42,7 @@ public class FileLeaf implements FileSystemNode {
     @Override
     public void add(FileSystemNode node) {
         throw new UnsupportedOperationException(
-            "لا يمكن إضافة عنصر داخل ملف: " + getName()
+                "Cannot add a node inside a file: " + getName()
         );
     }
 
@@ -50,7 +50,7 @@ public class FileLeaf implements FileSystemNode {
     @Override
     public void remove(FileSystemNode node) {
         throw new UnsupportedOperationException(
-            "لا يمكن حذف عنصر من داخل ملف: " + getName()
+                "Cannot remove a node from inside a file: " + getName()
         );
     }
 

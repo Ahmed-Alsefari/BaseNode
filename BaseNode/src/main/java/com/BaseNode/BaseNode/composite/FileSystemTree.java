@@ -36,7 +36,7 @@ public class FileSystemTree {
     public FolderComposite buildFromFolder(Long folderId) {
         FolderEntity folderEntity = folderService.getFolder(folderId);
         if (folderEntity == null) {
-            throw new IllegalArgumentException("المجلد غير موجود: id=" + folderId);
+            throw new IllegalArgumentException("Folder not found: id=" + folderId);
         }
 
         FolderComposite folderNode = new FolderComposite(folderEntity);

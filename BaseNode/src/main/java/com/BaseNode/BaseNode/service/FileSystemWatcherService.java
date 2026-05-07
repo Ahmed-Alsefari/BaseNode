@@ -2,6 +2,8 @@ package com.BaseNode.BaseNode.service;
 
 import com.BaseNode.BaseNode.config.StorageConfig;
 import com.BaseNode.BaseNode.model.FileEntity;
+import com.BaseNode.BaseNode.observer.FileSystemObserver;
+import com.BaseNode.BaseNode.observer.SseObserver;
 import com.BaseNode.BaseNode.repository.FileRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -11,6 +13,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.BaseNode.BaseNode.factory.EntityFactory;
@@ -29,12 +33,26 @@ public class FileSystemWatcherService {
 
     private WatchService watchService;
     private Thread watchThread;
-
-    private final List<SseEmitter> emitters = new java.util.concurrent.CopyOnWriteArrayList<>();
+    private final List<FileSystemObserver> observers = Collections.synchronizedList(new ArrayList<>());
+    private final SseObserver sseObserver = new SseObserver();
     private final java.util.Set<String> uploadingFiles = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
+    public void addObserver(FileSystemObserver observer) {
+        observers.add(observer);
+    }
+    public void removeObserver(FileSystemObserver observer) {
+        observers.remove(observer);
+    }
+    private void notifyAdded(String path) {
+        for (FileSystemObserver obs : observers) obs.onFileAdded(path);
+    }
+    private void notifyDeleted(String path) {
+        for (FileSystemObserver obs : observers) obs.onFileDeleted(path);
+    }
 
     @PostConstruct
     public void start() throws IOException {
+        addObserver(sseObserver);
 
         Path uploadPath = storageConfig.getUploadPath();
 
@@ -144,7 +162,7 @@ public class FileSystemWatcherService {
                         );
                 folderRepository.save(folder);
                 System.out.println("[Watcher] Folder added to DB: " + fullPath.getFileName());
-                notifyBrowser();
+                notifyAdded(normalizePath(fullPath));
             }
             return;
         }
@@ -185,7 +203,7 @@ public class FileSystemWatcherService {
                     : EntityFactory.createFile(name, pathStr, size, contentType);
             fileRepository.save(entity);
             System.out.println("[Watcher] File added to DB: " + name);
-            notifyBrowser();
+            notifyAdded(pathStr);
         } catch (Exception e) {
             System.out.println("[Watcher] Could not add file: " + e.getMessage());
         }
@@ -212,7 +230,7 @@ public class FileSystemWatcherService {
                     try { fileRepository.delete(file); } catch (Exception ignored) {}
                 });
                 folderRepository.delete(folder);
-                notifyBrowser();
+                notifyDeleted(pathStr);
             } catch (Exception e) {
                 System.out.println("[Watcher] Folder already removed from DB, skipping: " + folder.getName());
             }
@@ -225,7 +243,7 @@ public class FileSystemWatcherService {
                     try {
                         fileRepository.delete(file);
                         System.out.println("[Watcher] File deleted from DB: " + file.getFileName());
-                        notifyBrowser();
+                        notifyDeleted(pathStr);
                     } catch (Exception e) {
                         System.out.println("[Watcher] File already removed from DB, skipping: " + file.getFileName());
                     }
@@ -235,7 +253,6 @@ public class FileSystemWatcherService {
     private void syncOnStartup(Path uploadPath) throws IOException {
         System.out.println("Syncing DB with Uploads folder...");
 
-        System.out.println("Syncing DB with Uploads folder...");
 
         try (java.util.stream.Stream<Path> stream = Files.walk(uploadPath)) {
             stream.filter(Files::isDirectory)
@@ -308,29 +325,9 @@ public class FileSystemWatcherService {
         System.out.println("Sync complete.");
     }
     public SseEmitter subscribe() {
-        SseEmitter emitter = new SseEmitter(0L);
-        emitters.add(emitter);
-        emitter.onCompletion(() -> emitters.remove(emitter));
-        emitter.onTimeout(() -> emitters.remove(emitter));
-        emitter.onError((e) -> emitters.remove(emitter));
-
-        try {
-            emitter.send(SseEmitter.event().name("ping").data("connected"));
-        } catch (IOException e) {
-            emitters.remove(emitter);
-        }
-        return emitter;
+        return sseObserver.subscribe();
     }
 
-    private void notifyBrowser() {
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event().name("refresh").data("reload"));
-            } catch (Exception e) {
-                emitters.remove(emitter);
-            }
-        }
-    }
 
 
     public void markUploading(String filePath) {
