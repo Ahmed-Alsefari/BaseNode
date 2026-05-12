@@ -2,8 +2,11 @@ package com.BaseNode.BaseNode.controller;
 
 import com.BaseNode.BaseNode.model.FileEntity;
 import com.BaseNode.BaseNode.model.FolderEntity;
+import com.BaseNode.BaseNode.model.UserEntity;
+import com.BaseNode.BaseNode.service.AuditService;
 import com.BaseNode.BaseNode.service.FileService;
 import com.BaseNode.BaseNode.service.FolderService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -23,6 +26,9 @@ import java.util.List;
 public class FileControllerImpl implements FileController {
 
     @Autowired
+    private AuditService auditService;
+
+    @Autowired
     private FileService fileService;
 
     @Autowired
@@ -30,14 +36,28 @@ public class FileControllerImpl implements FileController {
 
     @PostMapping("/upload")
     @Override
-    public ResponseEntity<String> uploadFile(@RequestParam("file") List<MultipartFile> files, @RequestParam(value = "folderId", required = false) Long folderId) {
+    public ResponseEntity<String> uploadFile(@RequestParam("file") List<MultipartFile> files, @RequestParam(value = "folderId", required = false ) Long folderId, HttpSession session) {
         try {
             if (folderId != null) {
                 FolderEntity folder = folderService.getFolder(folderId);
                 if (folder != null) {
                     for (MultipartFile file : files) {
+
                         if (!file.isEmpty()) {
-                            fileService.uploadFileToFolder(file, folderId, folder.getFolderPath());
+
+                            fileService.uploadFileToFolder(
+                                    file,
+                                    folderId,
+                                    folder.getFolderPath()
+                            );
+
+                            String loggedInUser =
+                                    (String) session.getAttribute("loggedInUser");
+                            // File upload > log audit event #A
+                            auditService.logFileUpload(
+                                    loggedInUser,
+                                    file.getOriginalFilename()
+                            );
                         }
                     }
                     return ResponseEntity.status(302)
@@ -46,8 +66,18 @@ public class FileControllerImpl implements FileController {
                 }
             }
             for (MultipartFile file : files) {
+
                 if (!file.isEmpty()) {
+
                     fileService.uploadFile(file);
+
+                    String loggedInUser =
+                            (String) session.getAttribute("loggedInUser");
+
+                    auditService.logFileUpload(
+                            loggedInUser,
+                            file.getOriginalFilename()
+                    );
                 }
             }
             return ResponseEntity.status(302)
@@ -106,12 +136,20 @@ public class FileControllerImpl implements FileController {
 
     @Override
     @PostMapping("/delete/{id}")
-    public ResponseEntity<String> deleteFile(@PathVariable Long id) throws IOException {
+    public ResponseEntity<String> deleteFile(@PathVariable Long id, HttpSession session) throws IOException {
         FileEntity fileEntity = fileService.getFile(id);
         if (fileEntity == null) {
             return ResponseEntity.notFound().build();
         }
         fileService.deleteFile(id);
+
+        String loggedInUser =
+                (String) session.getAttribute("loggedInUser");
+        // File deletion > log audit event #A
+        auditService.logFileDelete(
+                loggedInUser,
+                fileEntity.getFileName()
+        );
         return ResponseEntity.status(302)
                 .header("Location", "/")
                 .build();

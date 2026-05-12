@@ -6,10 +6,7 @@ import com.BaseNode.BaseNode.request.LoginRequest;
 import com.BaseNode.BaseNode.request.RegisterRequest;
 import com.BaseNode.BaseNode.model.UserEntity;
 import com.BaseNode.BaseNode.repository.UserRepository;
-import com.BaseNode.BaseNode.service.FileService;
-import com.BaseNode.BaseNode.service.FileSystemWatcherService;
-import com.BaseNode.BaseNode.service.FolderService;
-import com.BaseNode.BaseNode.service.SecureFileServiceProxy;
+import com.BaseNode.BaseNode.service.*;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -43,6 +40,9 @@ public class WebControllerImpl implements WebController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder encoder;
+
+    @Autowired
+    private AuditService auditService;
 
     @Autowired
     private FileService fileService;
@@ -82,10 +82,18 @@ public class WebControllerImpl implements WebController {
             // match the password hash with stored db_hash #A
             if (encoder.matches(loginRequest.getPassword(), dbPassword)) {
                 session.setAttribute(SESSION_USER, loginRequest.getUsername());
+                // Successful login > log audit event #A
+                auditService.logLoginSuccess(
+                        loginRequest.getUsername()
+                );
                 return "redirect:/";
             }
         }
         model.addAttribute("error", "Invalid username or password.");
+        // Failed login attempt > log audit event #A
+        auditService.logLoginFailure(
+                loginRequest.getUsername()
+        );
         return "login";
     }
 
@@ -118,13 +126,27 @@ public class WebControllerImpl implements WebController {
         );
 
         userRepository.save(user);
+        // Successful Registration > log #A
+        auditService.logRegistration(
+                registerRequest.getUsername()
+        );
         return "redirect:/login";
     }
 
     @Override
     @GetMapping("/logout")
     public String logout(HttpSession session) {
+
+        String loggedInUser =
+                (String) session.getAttribute("loggedInUser");
+
+        if (loggedInUser != null) {
+            // User logout > log audit event #A
+            auditService.logLogout(loggedInUser);
+        }
+
         session.invalidate();
+
         return "redirect:/login";
     }
 
@@ -201,8 +223,18 @@ public class WebControllerImpl implements WebController {
 
         FileEntity entity = secureService.getFile(id);
         Long folderId = (entity != null) ? entity.getFolderId() : null;
+        String fileName = (entity != null) ? entity.getFileName() : "unknown";
 
         secureService.deleteFile(id);
+
+        String loggedInUser =
+                (String) session.getAttribute("loggedInUser");
+
+        auditService.logFileDelete(
+                loggedInUser,
+                fileName
+        );
+
 
         return (folderId != null) ? "redirect:/?folderId=" + folderId : "redirect:/";
     }

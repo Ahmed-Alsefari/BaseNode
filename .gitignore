@@ -8,3 +8,4 @@ target/
 *.mv.db
 *.trace.db
 ${project.build.directory}/
+logs/

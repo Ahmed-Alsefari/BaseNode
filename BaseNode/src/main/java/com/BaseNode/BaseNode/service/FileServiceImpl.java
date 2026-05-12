@@ -56,7 +56,7 @@ public class FileServiceImpl implements FileService {
         String pathStr = targetPath.toString();
 
         watcherService.markUploading(pathStr);
-        // to prevent dangerous or spoofed file uploads #A
+        // Validate uploaded file type before saving #A
         fileValidationService.validate(file);
 
         try {
