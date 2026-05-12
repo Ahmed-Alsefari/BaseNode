@@ -50,6 +50,9 @@
     </style>
 </head>
 <body>
+<script th:if="${param.uploadError != null}">
+    alert('Suspicious or unsafe file blocked.');
+</script>
 <div class="container">
     <h1>
         BaseNode File Manager

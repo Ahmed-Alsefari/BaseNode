@@ -19,6 +19,9 @@ import com.BaseNode.BaseNode.factory.EntityFactory;
 public class FileServiceImpl implements FileService {
 
     @Autowired
+    private FileValidationService fileValidationService;
+
+    @Autowired
     private FileRepository fileRepository;
 
     @Autowired
@@ -53,6 +56,9 @@ public class FileServiceImpl implements FileService {
         String pathStr = targetPath.toString();
 
         watcherService.markUploading(pathStr);
+        // to prevent dangerous or spoofed file uploads #A
+        fileValidationService.validate(file);
+
         try {
             Files.copy(file.getInputStream(), targetPath);
         } finally {
@@ -107,6 +113,9 @@ public class FileServiceImpl implements FileService {
 
         String pathStr = targetPath.toString();
         watcherService.markUploading(pathStr);
+        // to prevent dangerous or spoofed file uploads #A
+        fileValidationService.validate(file);
+
         try {
             Files.copy(file.getInputStream(), targetPath);
         } finally {

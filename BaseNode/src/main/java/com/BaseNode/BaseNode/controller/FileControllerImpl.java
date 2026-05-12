@@ -55,7 +55,10 @@ public class FileControllerImpl implements FileController {
                     .build();
         } catch (IOException e) {
             return ResponseEntity.status(302)
-                    .header("Location", "/?error=" + e.getMessage())
+                    .header(
+                            "Location",
+                            "/?uploadError=true"
+                    )
                     .build();
         }
     }
