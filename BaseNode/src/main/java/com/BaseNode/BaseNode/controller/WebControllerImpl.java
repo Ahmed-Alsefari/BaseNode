@@ -42,6 +42,9 @@ public class WebControllerImpl implements WebController {
     private final PasswordEncoder encoder;
 
     @Autowired
+    private LoginRateLimiterService rateLimiter;
+
+    @Autowired
     private AuditService auditService;
 
     @Autowired
@@ -75,13 +78,33 @@ public class WebControllerImpl implements WebController {
         if (bindingResult.hasErrors()) {
             return "login";
         }
+        // Block login attempts temporarily and show remaining block time #A
+        if (rateLimiter.isBlocked(loginRequest.getUsername())) {
 
+            long remainingSeconds =
+                    rateLimiter.getRemainingBlockSeconds(
+                            loginRequest.getUsername()
+                    );
+
+            model.addAttribute(
+                    "error",
+                    "Too many failed attempts. Try again in "
+                            + remainingSeconds +
+                            " seconds."
+            );
+
+            return "login";
+        }
         Optional<UserEntity> userOpt = userRepository.findByUsername(loginRequest.getUsername());
         if (userOpt.isPresent()) {
             String dbPassword = userOpt.get().getPassword();
             // match the password hash with stored db_hash #A
             if (encoder.matches(loginRequest.getPassword(), dbPassword)) {
                 session.setAttribute(SESSION_USER, loginRequest.getUsername());
+                // Reset failed login attempts after successful authentication #A
+                rateLimiter.resetAttempts(
+                        loginRequest.getUsername()
+                );
                 // Successful login > log audit event #A
                 auditService.logLoginSuccess(
                         loginRequest.getUsername()
@@ -92,6 +115,10 @@ public class WebControllerImpl implements WebController {
         model.addAttribute("error", "Invalid username or password.");
         // Failed login attempt > log audit event #A
         auditService.logLoginFailure(
+                loginRequest.getUsername()
+        );
+        // Record failed login attempts for brute force protection #A
+        rateLimiter.recordFailedAttempt(
                 loginRequest.getUsername()
         );
         return "login";
