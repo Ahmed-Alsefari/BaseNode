@@ -12,6 +12,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.BaseNode.BaseNode.factory.EntityFactory;
 
@@ -29,6 +32,9 @@ public class FileServiceImpl implements FileService {
 
     @Autowired
     private FileSystemWatcherService watcherService;
+
+    private static final ScheduledExecutorService scheduler =
+            Executors.newScheduledThreadPool(2);
 
     @Override
     public FileEntity uploadFile(MultipartFile file) throws IOException {
@@ -62,10 +68,10 @@ public class FileServiceImpl implements FileService {
         try {
             Files.copy(file.getInputStream(), targetPath);
         } finally {
-            new Thread(() -> {
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-                watcherService.unmarkUploading(pathStr);
-            }).start();
+            scheduler.schedule(
+                    () -> watcherService.unmarkUploading(pathStr),
+                    1, TimeUnit.SECONDS
+            );
         }
 
         FileEntity entity = EntityFactory.createFile(
@@ -119,10 +125,10 @@ public class FileServiceImpl implements FileService {
         try {
             Files.copy(file.getInputStream(), targetPath);
         } finally {
-            new Thread(() -> {
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-                watcherService.unmarkUploading(pathStr);
-            }).start();
+            scheduler.schedule(
+                    () -> watcherService.unmarkUploading(pathStr),
+                    1, TimeUnit.SECONDS
+            );
         }
 
         FileEntity entity = EntityFactory.createFileInFolder(

@@ -16,6 +16,8 @@ import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.BaseNode.BaseNode.factory.EntityFactory;
 
@@ -49,6 +51,12 @@ public class FileSystemWatcherService {
     private void notifyDeleted(String path) {
         for (FileSystemObserver obs : observers) obs.onFileDeleted(path);
     }
+
+    private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "watcher-db-worker");
+        t.setDaemon(true);
+        return t;
+    });
 
     @PostConstruct
     public void start() throws IOException {
@@ -104,11 +112,11 @@ public class FileSystemWatcherService {
                                     System.out.println("[Watcher] Could not register new dir: " + fullPath);
                                 }
                             }
-                            onFileAdded(fullPath);
+                            dbExecutor.submit(() -> onFileAdded(fullPath));
                         }
 
                         if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                            onFileDeleted(fullPath);
+                            dbExecutor.submit(() -> onFileDeleted(fullPath));
                         }
                     } catch (Exception e) {
                         System.out.println("[Watcher] Error processing event: " + e.getMessage());
@@ -129,6 +137,7 @@ public class FileSystemWatcherService {
         try {
             if (watchService != null) {
                 watchService.close();
+                dbExecutor.shutdown();
             }
         } catch (IOException e) {
             System.out.println("Error stopping watcher: " + e.getMessage());
@@ -170,9 +179,7 @@ public class FileSystemWatcherService {
         if (uploadingFiles.contains(fullPath.toString())) return;
 
         String pathStr = normalizePath(fullPath);
-        boolean alreadyInDB = fileRepository.findAll()
-                .stream()
-                .anyMatch(f -> f.getFilePath().equals(pathStr));
+        boolean alreadyInDB = fileRepository.findByFilePath(pathStr).isPresent();
         if (alreadyInDB) return;
 
         try {
@@ -236,18 +243,15 @@ public class FileSystemWatcherService {
             }
         });
 
-        fileRepository.findAll().stream()
-                .filter(f -> f.getFilePath().equals(pathStr))
-                .findFirst()
-                .ifPresent(file -> {
-                    try {
-                        fileRepository.delete(file);
-                        System.out.println("[Watcher] File deleted from DB: " + file.getFileName());
-                        notifyDeleted(pathStr);
-                    } catch (Exception e) {
-                        System.out.println("[Watcher] File already removed from DB, skipping: " + file.getFileName());
-                    }
-                });
+        fileRepository.findByFilePath(pathStr).ifPresent(file -> {
+            try {
+                fileRepository.delete(file);
+                System.out.println("[Watcher] File deleted from DB: " + file.getFileName());
+                notifyDeleted(pathStr);
+            } catch (Exception e) {
+                System.out.println("[Watcher] File already removed from DB, skipping: " + file.getFileName());
+            }
+        });
     }
 
     private void syncOnStartup(Path uploadPath) throws IOException {
@@ -261,9 +265,6 @@ public class FileSystemWatcherService {
                     .forEach(dir -> {
                         boolean inDB = folderRepository.findByFolderPath(normalizePath(dir)).isPresent();
                         if (inDB) return;
-
-
-
                         String parentPathStr = normalizePath(dir.getParent());
                         Long parentId = folderRepository.findByFolderPath(parentPathStr)
                                 .map(f -> f.getId())
@@ -280,7 +281,6 @@ public class FileSystemWatcherService {
                     });
         }
 
-
         for (FileEntity entity : fileRepository.findAll()) {
             if (!Files.exists(Path.of(entity.getFilePath()))) {
                 fileRepository.delete(entity);
@@ -291,9 +291,7 @@ public class FileSystemWatcherService {
         try (java.util.stream.Stream<Path> stream = Files.walk(uploadPath)) {
             stream.filter(p -> !Files.isDirectory(p)).forEach(file -> {
                 String pathStr = normalizePath(file);
-                boolean inDB = fileRepository.findAll()
-                        .stream()
-                        .anyMatch(f -> f.getFilePath().equals(pathStr));
+                boolean inDB = fileRepository.findByFilePath(pathStr).isPresent();
 
                 if (inDB) return;
 
@@ -327,8 +325,6 @@ public class FileSystemWatcherService {
     public SseEmitter subscribe() {
         return sseObserver.subscribe();
     }
-
-
 
     public void markUploading(String filePath) {
         uploadingFiles.add(filePath);
