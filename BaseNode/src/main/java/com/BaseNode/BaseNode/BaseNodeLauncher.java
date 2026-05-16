@@ -224,12 +224,28 @@ public class BaseNodeLauncher extends JFrame {
             try (BufferedReader br = new BufferedReader(
                     new InputStreamReader(nportProcess.getInputStream()))) {
                 String line;
+                boolean failed = false;
+
                 while ((line = br.readLine()) != null) {
                     System.out.println("[NPort] " + line);
+
+                    if (line.contains("already in use") || line.contains("Failed to connect")) {
+                        failed = true;
+                    }
+
                     for (String part : line.split("\\s+")) {
                         if (part.startsWith("https://") && part.contains(".nport.link")) {
                             tunnelUrl = part.trim();
                             dbUrl     = tunnelUrl + "/h2-console";
+                            String uploadsPath = new File(UPLOADS_PATH).getCanonicalPath();
+
+                            // Print to console
+                            System.out.println("──────────────────────────────");
+                            System.out.println("URL web:        " + tunnelUrl);
+                            System.out.println("DB web:         " + dbUrl);
+                            System.out.println("Uploads folder: " + uploadsPath);
+                            System.out.println("──────────────────────────────");
+
                             final String u = tunnelUrl, d = dbUrl;
                             SwingUtilities.invokeLater(() -> {
                                 urlLabel.setLink("URL web:  " + u);
@@ -239,6 +255,58 @@ public class BaseNodeLauncher extends JFrame {
                         }
                     }
                 }
+
+                if (failed) {
+                    System.out.println("[NPort] Subdomain \"" + name + "\" is taken. Enter a new name:");
+
+                    java.util.concurrent.atomic.AtomicReference<String> answer = new java.util.concurrent.atomic.AtomicReference<>(null);
+                    JOptionPane pane = new JOptionPane(
+                            "Subdomain \"" + name + "\" is already in use.\nEnter a different name:",
+                            JOptionPane.WARNING_MESSAGE,
+                            JOptionPane.OK_CANCEL_OPTION
+                    );
+                    JTextField inputField = new JTextField();
+                    pane.setMessage(new Object[]{
+                            "Subdomain \"" + name + "\" is already in use.\nEnter a different name:", inputField
+                    });
+                    JDialog dialog = pane.createDialog(BaseNodeLauncher.this, "Subdomain Taken");
+
+                    // Console thread — if user types here first, close the dialog
+                    Thread consoleThread = new Thread(() -> {
+                        java.util.Scanner scanner = new java.util.Scanner(System.in);
+                        String input = scanner.nextLine().trim().toLowerCase();
+                        if (input.matches("[a-z0-9-]+") && answer.compareAndSet(null, input)) {
+                            System.out.println("[NPort] Using: " + input);
+                            SwingUtilities.invokeLater(() -> {
+                                dialog.dispose(); // close popup
+                                nameField.setText(input);
+                                nameField.setEnabled(true);
+                                startBtn.setEnabled(true);
+                                stopBtn.setEnabled(false);
+                                setStatus("Stopped", STOPPED);
+                                startBtn.doClick();
+                            });
+                        }
+                    }, "console-input");
+                    consoleThread.setDaemon(true);
+                    consoleThread.start();
+
+                    // Show dialog — if user types here first
+                    SwingUtilities.invokeLater(() -> {
+                        dialog.setVisible(true);
+                        String newNameUI = inputField.getText().trim().toLowerCase();
+                        if (newNameUI.matches("[a-z0-9-]+") && answer.compareAndSet(null, newNameUI)) {
+                            consoleThread.interrupt();
+                            nameField.setText(newNameUI);
+                            nameField.setEnabled(true);
+                            startBtn.setEnabled(true);
+                            stopBtn.setEnabled(false);
+                            setStatus("Stopped", STOPPED);
+                            startBtn.doClick();
+                        }
+                    });
+                }
+
             } catch (Exception ignored) {}
         }, "nport-reader").start();
     }
