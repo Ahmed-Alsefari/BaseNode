@@ -12,13 +12,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.*;
 
-
 public class BaseNodeLauncher extends JFrame {
 
     private static final String LOG_PATH     = "logs/basenode.log";
     private static final String UPLOADS_PATH = "../Uploads";
     private static final int    APP_PORT     = 8080;
     private static final String BASE_URL     = "http://localhost:" + APP_PORT;
+    private static final boolean IS_DOCKER   = System.getenv("DOCKER") != null;
 
     private Process          nportProcess;
     private volatile String  tunnelUrl     = "";
@@ -48,6 +48,12 @@ public class BaseNodeLauncher extends JFrame {
         super("BaseNode");
         this.springStarter = springStarter;
 
+        if (IS_DOCKER) {
+            // Docker mode: start everything headlessly without building any UI
+            startDockerMode();
+            return;
+        }
+
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent e) {
@@ -68,6 +74,83 @@ public class BaseNodeLauncher extends JFrame {
         setLocationRelativeTo(null);
         setVisible(true);
     }
+
+    // ─── Docker / headless mode ───────────────────────────────────────────────
+
+    private void startDockerMode() {
+        System.out.println("[BaseNode] Running in Docker mode");
+
+        new Thread(() -> {
+            try {
+                // 1. Start Spring Boot
+                if (!springStarted) {
+                    springStarted = true;
+                    new Thread(springStarter, "spring-boot").start();
+                }
+
+                System.out.println("[BaseNode] Waiting for Spring Boot...");
+                waitForSpring();
+                System.out.println("[BaseNode] Spring Boot is up");
+
+                // 2. Start NPort with basenode-N, auto-retry on taken
+                startNPortDocker();
+
+            } catch (Exception ex) {
+                System.err.println("[BaseNode] Startup failed: " + ex.getMessage());
+            }
+        }, "docker-starter").start();
+    }
+
+    private void startNPortDocker() throws IOException {
+        java.util.Scanner scanner = new java.util.Scanner(System.in);
+        String name = "basenode";
+
+        while (true) {
+            System.out.println("[BaseNode] Trying subdomain: " + name);
+
+            ProcessBuilder pb = new ProcessBuilder("nport",
+                    String.valueOf(APP_PORT), "-s", name);
+            pb.redirectErrorStream(true);
+            nportProcess = pb.start();
+
+            boolean taken = false;
+
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(nportProcess.getInputStream()))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    System.out.println("[NPort] " + line);
+
+                    if (line.contains("already in use") || line.contains("Failed to connect")) {
+                        taken = true;
+                        nportProcess.destroyForcibly();
+                        break;
+                    }
+
+                    for (String part : line.split("\\s+")) {
+                        if (part.startsWith("https://") && part.contains(".nport.link")) {
+                            tunnelUrl = part.trim();
+                            dbUrl     = tunnelUrl + "/h2-console";
+                            System.out.println("──────────────────────────────");
+                            System.out.println("URL web:  " + tunnelUrl);
+                            System.out.println("DB web:   " + dbUrl);
+                            System.out.println("──────────────────────────────");
+                        }
+                    }
+                }
+            }
+
+            if (!taken) break;
+
+            System.out.println("[NPort] Subdomain \"" + name + "\" is taken. Enter a new name:");
+            name = scanner.nextLine().trim().toLowerCase();
+            while (!name.matches("[a-z0-9-]+")) {
+                System.out.println("[NPort] Invalid name. Use only letters, numbers, and hyphens:");
+                name = scanner.nextLine().trim().toLowerCase();
+            }
+        }
+    }
+    // ─── GUI mode ─────────────────────────────────────────────────────────────
 
     private void buildUI() {
         JPanel root = new JPanel();
@@ -198,7 +281,6 @@ public class BaseNodeLauncher extends JFrame {
         });
     }
 
-
     private void waitForSpring() throws Exception {
         for (int i = 0; i < 90; i++) {
             try {
@@ -239,7 +321,6 @@ public class BaseNodeLauncher extends JFrame {
                             dbUrl     = tunnelUrl + "/h2-console";
                             String uploadsPath = new File(UPLOADS_PATH).getCanonicalPath();
 
-                            // Print to console
                             System.out.println("──────────────────────────────");
                             System.out.println("URL web:        " + tunnelUrl);
                             System.out.println("DB web:         " + dbUrl);
@@ -271,14 +352,13 @@ public class BaseNodeLauncher extends JFrame {
                     });
                     JDialog dialog = pane.createDialog(BaseNodeLauncher.this, "Subdomain Taken");
 
-                    // Console thread — if user types here first, close the dialog
                     Thread consoleThread = new Thread(() -> {
                         java.util.Scanner scanner = new java.util.Scanner(System.in);
                         String input = scanner.nextLine().trim().toLowerCase();
                         if (input.matches("[a-z0-9-]+") && answer.compareAndSet(null, input)) {
                             System.out.println("[NPort] Using: " + input);
                             SwingUtilities.invokeLater(() -> {
-                                dialog.dispose(); // close popup
+                                dialog.dispose();
                                 nameField.setText(input);
                                 nameField.setEnabled(true);
                                 startBtn.setEnabled(true);
@@ -291,7 +371,6 @@ public class BaseNodeLauncher extends JFrame {
                     consoleThread.setDaemon(true);
                     consoleThread.start();
 
-                    // Show dialog — if user types here first
                     SwingUtilities.invokeLater(() -> {
                         dialog.setVisible(true);
                         String newNameUI = inputField.getText().trim().toLowerCase();

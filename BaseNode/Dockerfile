@@ -6,6 +6,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 FROM eclipse-temurin:17-jre-alpine
+RUN apk add --no-cache nodejs npm && npm install -g nport
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 ENV DOCKER=true
