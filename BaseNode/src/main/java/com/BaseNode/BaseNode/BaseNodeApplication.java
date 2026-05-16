@@ -33,7 +33,9 @@ public class BaseNodeApplication {
 				);
 			});
 		} else {
-			SpringApplication.run(BaseNodeApplication.class, args);
+			new DockerLauncher(
+					() -> SpringApplication.run(BaseNodeApplication.class, args)
+			).start();
 		}
 	}
 }
