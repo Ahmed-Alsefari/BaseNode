@@ -53,10 +53,10 @@ public class DockerLauncher {
     }
 
     private void startNPort() throws IOException {
-        Scanner scanner = new Scanner(System.in);
-        String name = "basenode";
+        int attempt = 0;
 
         while (true) {
+            String name = attempt == 0 ? "basenode" : "basenode-" + attempt;
             System.out.println("[BaseNode] Trying subdomain: " + name);
 
             ProcessBuilder pb = new ProcessBuilder("nport",
@@ -92,12 +92,8 @@ public class DockerLauncher {
 
             if (!taken) break;
 
-            System.out.println("[NPort] Subdomain \"" + name + "\" is taken. Enter a new name:");
-            name = scanner.nextLine().trim().toLowerCase();
-            while (!name.matches("[a-z0-9-]+")) {
-                System.out.println("[NPort] Invalid name. Use only letters, numbers, and hyphens:");
-                name = scanner.nextLine().trim().toLowerCase();
-            }
+            System.out.println("[NPort] Subdomain taken, trying next...");
+            attempt++;
         }
     }
 }
