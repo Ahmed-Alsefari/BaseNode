@@ -60,7 +60,7 @@ public class DockerLauncher {
             System.out.println("[BaseNode] Trying subdomain: " + name);
 
             ProcessBuilder pb = new ProcessBuilder("nport",
-                    String.valueOf(APP_PORT), "-s", name);
+                    String.valueOf(APP_PORT), "-s", name, "-l", "en");
             pb.redirectErrorStream(true);
             nportProcess = pb.start();
 
