@@ -19,16 +19,21 @@ public class BaseNodeApplication {
 			System.err.println(e.getMessage());
 		}
 
-		System.setProperty("java.awt.headless", "false");
+		boolean isDocker = System.getenv("DOCKER") != null;
 
-		SwingUtilities.invokeLater(() -> {
-			try {
-				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-			} catch (Exception ignored) {}
+		if (!isDocker) {
+			System.setProperty("java.awt.headless", "false");
+			SwingUtilities.invokeLater(() -> {
+				try {
+					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+				} catch (Exception ignored) {}
 
-			new BaseNodeLauncher(
-					() -> SpringApplication.run(BaseNodeApplication.class, args)
-			);
-		});
+				new BaseNodeLauncher(
+						() -> SpringApplication.run(BaseNodeApplication.class, args)
+				);
+			});
+		} else {
+			SpringApplication.run(BaseNodeApplication.class, args);
+		}
 	}
 }
