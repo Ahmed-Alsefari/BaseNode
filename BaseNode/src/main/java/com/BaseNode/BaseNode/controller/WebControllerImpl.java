@@ -28,6 +28,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.BaseNode.BaseNode.factory.EntityFactory;
 import com.BaseNode.BaseNode.composite.FileSystemTree;
@@ -245,7 +246,7 @@ public class WebControllerImpl implements WebController {
 
     @Override
     @PostMapping("/delete/{id}")
-    public String deleteFile(@PathVariable Long id, HttpSession session) throws IOException {
+    public String deleteFile(@PathVariable UUID id, HttpSession session) throws IOException {
         FileService secureService = new SecureFileServiceProxy(fileService, session);
 
         FileEntity entity = secureService.getFile(id);

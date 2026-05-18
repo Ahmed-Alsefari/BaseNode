@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import java.io.IOException;
+import java.util.UUID;
 
 public interface WebController {
 
@@ -45,5 +46,5 @@ public interface WebController {
             HttpSession session);
 
     @PostMapping("/delete/{id}")
-    String deleteFile(@PathVariable Long id, HttpSession session) throws IOException;
+    String deleteFile(@PathVariable UUID id, HttpSession session) throws IOException;
 }

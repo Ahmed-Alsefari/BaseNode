@@ -3,6 +3,8 @@
     import org.springframework.web.multipart.MultipartFile;
     import java.io.IOException;
     import java.util.List;
+    import java.util.UUID;
+
     import com.BaseNode.BaseNode.model.FileEntity;
 
     public interface FileService {
@@ -10,6 +12,6 @@
         FileEntity uploadFileToFolder(MultipartFile file, Long folderId, String folderPhysicalPath) throws IOException;
         List<FileEntity> getAllFiles();
         List<FileEntity> getFilesByFolder(Long folderId);
-        FileEntity getFile(Long id);
-        void deleteFile(Long id) throws IOException;
+        FileEntity getFile(UUID id);
+        void deleteFile(UUID id) throws IOException;
     }

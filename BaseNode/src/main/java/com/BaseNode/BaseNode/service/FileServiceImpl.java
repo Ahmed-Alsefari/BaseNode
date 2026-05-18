@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -143,13 +144,13 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public FileEntity getFile(Long id) {
+    public FileEntity getFile(UUID id) {
         return fileRepository.findById(id).orElse(null);
     }
 
     @Override
     @Transactional
-    public void deleteFile(Long id) throws IOException {
+    public void deleteFile(UUID id) throws IOException {
         FileEntity entity = fileRepository.findById(id).orElse(null);
         if (entity != null) {
             Path filePath = Path.of(entity.getFilePath());

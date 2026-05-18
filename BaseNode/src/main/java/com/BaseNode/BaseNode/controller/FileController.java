@@ -7,11 +7,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 public interface FileController {
     ResponseEntity<String> uploadFile(List<MultipartFile> files, Long folderId, HttpSession session);
     ResponseEntity<List<FileEntity>> listFiles();
-    ResponseEntity<byte[]> viewFile(Long id) throws IOException;
-    ResponseEntity<byte[]> downloadFile(Long id) throws IOException;
-    ResponseEntity<String> deleteFile(Long id, HttpSession session) throws IOException;
+    ResponseEntity<byte[]> viewFile(UUID id) throws IOException;
+    ResponseEntity<byte[]> downloadFile(UUID id) throws IOException;
+    ResponseEntity<String> deleteFile(UUID id, HttpSession session) throws IOException;
 }

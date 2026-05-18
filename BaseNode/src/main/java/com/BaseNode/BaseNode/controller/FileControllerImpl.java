@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/files")
@@ -101,7 +102,7 @@ public class FileControllerImpl implements FileController {
 
 
     @GetMapping("/view/{id}")
-    public ResponseEntity<byte[]> viewFile(@PathVariable Long id) throws IOException {
+    public ResponseEntity<byte[]> viewFile(@PathVariable UUID id) throws IOException {
         FileEntity fileEntity = fileService.getFile(id);
         if (fileEntity == null) {
             return ResponseEntity.notFound().build();
@@ -119,7 +120,7 @@ public class FileControllerImpl implements FileController {
 
     @GetMapping("/download/{id}")
     @Override
-    public ResponseEntity<byte[]> downloadFile(@PathVariable Long id) throws IOException {
+    public ResponseEntity<byte[]> downloadFile(@PathVariable UUID id) throws IOException {
         FileEntity fileEntity = fileService.getFile(id);
         if (fileEntity == null) {
             return ResponseEntity.notFound().build();
@@ -136,7 +137,7 @@ public class FileControllerImpl implements FileController {
 
     @Override
     @PostMapping("/delete/{id}")
-    public ResponseEntity<String> deleteFile(@PathVariable Long id, HttpSession session) throws IOException {
+    public ResponseEntity<String> deleteFile(@PathVariable UUID id, HttpSession session) throws IOException {
         FileEntity fileEntity = fileService.getFile(id);
         if (fileEntity == null) {
             return ResponseEntity.notFound().build();

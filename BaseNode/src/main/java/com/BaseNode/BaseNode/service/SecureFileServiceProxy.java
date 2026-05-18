@@ -6,6 +6,8 @@ import com.BaseNode.BaseNode.model.FileEntity;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
+
 // move security check to this proxy class #A
 public class SecureFileServiceProxy implements FileService {
 
@@ -48,13 +50,13 @@ public class SecureFileServiceProxy implements FileService {
     }
 
     @Override
-    public FileEntity getFile(Long id) {
+    public FileEntity getFile(UUID id) {
         checkAuth();
         return real.getFile(id);
     }
 
     @Override
-    public void deleteFile(Long id) throws IOException {
+    public void deleteFile(UUID id) throws IOException {
         checkAuth();
         real.deleteFile(id);
     }

@@ -6,10 +6,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Repository
-public interface FileRepository extends JpaRepository<FileEntity, Long> {
+public interface FileRepository extends JpaRepository<FileEntity, UUID> {
     List<FileEntity> findByFolderId(Long folderId);
     Optional<FileEntity> findByFilePath(String filePath);
 }
