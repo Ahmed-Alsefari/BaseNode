@@ -53,7 +53,7 @@ public class BaseNodeLauncher extends JFrame {
             startDockerMode();
             return;
         }
-
+        ensureDependencies();
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent e) {
@@ -74,7 +74,30 @@ public class BaseNodeLauncher extends JFrame {
         setLocationRelativeTo(null);
         setVisible(true);
     }
-
+    private void ensureDependencies() {
+        try {
+            // Check Node.js
+            Process nodeCheck = Runtime.getRuntime().exec("node --version");
+            nodeCheck.waitFor();
+            if (nodeCheck.exitValue() != 0) {
+                System.out.println("[BaseNode] Installing Node.js...");
+                new ProcessBuilder("winget", "install", "OpenJS.NodeJS", "--silent", "--accept-source-agreements", "--accept-package-agreements")
+                    .inheritIO().start().waitFor();
+            }
+    
+            // Check NPort
+            Process nportCheck = Runtime.getRuntime().exec("nport --version");
+            nportCheck.waitFor();
+            if (nportCheck.exitValue() != 0) {
+                System.out.println("[BaseNode] Installing NPort...");
+                new ProcessBuilder("cmd.exe", "/c", "npm", "install", "-g", "nport")
+                    .inheritIO().start().waitFor();
+            }
+    
+        } catch (Exception e) {
+            System.err.println("[BaseNode] Dependency check failed: " + e.getMessage());
+        }
+    }
     // ─── Docker / headless mode ───────────────────────────────────────────────
 
     private void startDockerMode() {
@@ -298,7 +321,7 @@ public class BaseNodeLauncher extends JFrame {
 
     private void startNPort(String name) throws IOException {
         ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", "nport.cmd",
-                String.valueOf(APP_PORT), "-s", name);
+                String.valueOf(APP_PORT), "-s", name, "-l", "en");
         pb.redirectErrorStream(true);
         nportProcess = pb.start();
 
