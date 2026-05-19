@@ -37,7 +37,8 @@ public class FileSystemWatcherService {
     private Thread watchThread;
     private final List<FileSystemObserver> observers = Collections.synchronizedList(new ArrayList<>());
     private final SseObserver sseObserver = new SseObserver();
-    private final java.util.Set<String> uploadingFiles = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private final java.util.Set<String> uploadingFiles   = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private final java.util.Set<String> creatingFolders = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
     public void addObserver(FileSystemObserver observer) {
         observers.add(observer);
@@ -161,8 +162,9 @@ public class FileSystemWatcherService {
                     .map(f -> f.getId())
                     .orElse(null);
 
-            boolean alreadyInDB = folderRepository.findByFolderPath(normalizePath(fullPath)).isPresent();
-            if (!alreadyInDB) {
+            String normalizedFullPath = normalizePath(fullPath);
+            boolean alreadyInDB = folderRepository.findByFolderPath(normalizedFullPath).isPresent();
+            if (!alreadyInDB && !creatingFolders.contains(normalizedFullPath)) {
                 com.BaseNode.BaseNode.model.FolderEntity folder =
                         EntityFactory.createFolder(
                                 fullPath.getFileName().toString(),
@@ -257,6 +259,18 @@ public class FileSystemWatcherService {
     private void syncOnStartup(Path uploadPath) throws IOException {
         System.out.println("Syncing DB with Uploads folder...");
 
+        // Remove duplicate folder entries left from previous bug
+        folderRepository.findAll().stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        f -> f.getFolderPath()))
+                .forEach((path, duplicates) -> {
+                    if (duplicates.size() > 1) {
+                        System.out.println("[Sync] Removing " + (duplicates.size() - 1) + " duplicate(s) for: " + path);
+                        duplicates.subList(1, duplicates.size()).forEach(folderRepository::delete);
+                        folderRepository.flush();
+                    }
+                });
+
 
         try (java.util.stream.Stream<Path> stream = Files.walk(uploadPath)) {
             stream.filter(Files::isDirectory)
@@ -332,6 +346,14 @@ public class FileSystemWatcherService {
 
     public void unmarkUploading(String filePath) {
         uploadingFiles.remove(filePath);
+    }
+
+    public void markCreatingFolder(String folderPath) {
+        creatingFolders.add(folderPath);
+    }
+
+    public void unmarkCreatingFolder(String folderPath) {
+        creatingFolders.remove(folderPath);
     }
 
     private String normalizePath(Path path) {

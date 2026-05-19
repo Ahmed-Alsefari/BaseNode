@@ -2,51 +2,242 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BaseNode File Manager</title>
+    <link rel="icon" type="image/png" th:href="@{/images/BaseNode2.png}">
     <style>
-        body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { margin-top: 0; color: #333; }
-        .toolbar { margin-bottom: 20px; }
-        .toolbar button, .toolbar a { padding: 8px 16px; margin-right: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 14px; }
-        .toolbar button.upload { background: #28a745; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
-        th { background-color: #f2f2f2; }
-        tr:hover { background-color: #f5f5f5; }
-        .folder { color: #007bff; font-weight: bold; }
-        .file { color: #333; }
-        .actions a { margin-right: 10px; color: #007bff; text-decoration: none; }
-        .actions a.delete { color: #dc3545; }
-        .actions a.view  { color: #28a745; }
-
-        .breadcrumb {
-            background: #e9ecef;
-            padding: 10px 14px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            font-size: 0.95rem;
+        :root {
+            --bg: #f9f9f9;
+            --container-bg: white;
+            --text: #333;
+            --text-muted: #666;
+            --border: #ddd;
+            --th-bg: #f2f2f2;
+            --row-hover: #f5f5f5;
+            --breadcrumb-bg: #e9ecef;
+            --input-border: #ccc;
+            --btn-cancel-bg: #f0f0f0;
+            --shadow: rgba(0,0,0,0.1);
         }
-        .breadcrumb strong { margin-right: 6px; }
-        .breadcrumb a { color: #007bff; text-decoration: none; font-weight: bold; }
-        .breadcrumb a:hover { text-decoration: underline; }
-        .breadcrumb .separator { margin: 0 4px; color: #666; }
-        .breadcrumb .current { color: #333; }
+        body.dark {
+            --bg: #262626;
+            --container-bg: #1f1f1e;
+            --text: #e0e0e0;
+            --text-muted: #999;
+            --border: #3a3a3a;
+            --th-bg: #454543;
+            --row-hover: #2a2a2a;
+            --breadcrumb-bg: #454543;
+            --input-border: #444;
+            --btn-cancel-bg: #2a2a4a;
+            --shadow: rgba(0,0,0,0.4);
+        }
 
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: var(--bg); margin: 0; padding: 16px; transition: background 0.3s, color 0.3s; color: var(--text); }
+        .container { max-width: 1000px; margin: auto; background: var(--container-bg); padding: 20px; border-radius: 8px; box-shadow: 0 0 10px var(--shadow); transition: background 0.3s; }
+
+        /* Header */
+        .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .header img { height: 48px; }
+        .header h1 { margin: 0; font-size: 1.2rem; color: var(--text); flex: 1; }
+
+        /* Toolbar */
+        .toolbar { margin-bottom: 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .toolbar button, .toolbar a {
+            padding: 8px 14px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .toolbar button.upload { background: #28a745; }
         .upload-form { display: inline; }
         .file-input { display: none; }
 
+        .theme-toggle {
+            margin-left: auto;
+            padding: 7px 12px;
+            background: var(--btn-cancel-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            background: var(--breadcrumb-bg);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 14px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .breadcrumb strong { margin-right: 4px; color: var(--text); }
+        .breadcrumb a { color: #007bff; text-decoration: none; font-weight: bold; }
+        .breadcrumb .separator { margin: 0 3px; color: var(--text-muted); }
+        .breadcrumb .current { color: var(--text); }
+
+        /* ── Desktop table ── */
+        .file-table { width: 100%; border-collapse: collapse; }
+        .file-table th, .file-table td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            vertical-align: middle;
+        }
+        .file-table th { background-color: var(--th-bg); font-size: 13px; white-space: nowrap; }
+        .file-table tr:hover td { background-color: var(--row-hover); }
+
+        /* Name column: truncate long names */
+        .file-table .col-name { max-width: 220px; }
+        .name-inner {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+        .name-inner span, .name-inner a {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+
+        .folder-link { color: #007bff; font-weight: bold; text-decoration: none; }
+        .folder-icon { color: #007bff; flex-shrink: 0; }
+        .file-icon { flex-shrink: 0; }
+
+        /* Actions group */
+        .actions-group {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .actions-group a,
+        .actions-group .delete-btn {
+            padding: 4px 9px;
+            font-size: 12px;
+            text-decoration: none;
+            color: #007bff;
+            background: none;
+            border: none;
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            display: inline-block;
+            line-height: 1.7;
+        }
+        .actions-group a:last-child,
+        .actions-group .delete-btn:last-child { border-right: none; }
+        .actions-group a:hover,
+        .actions-group .delete-btn:hover { background-color: var(--row-hover); }
+        .actions-group .view { color: #28a745; }
+        .actions-group .delete-btn { color: #dc3545; }
+
+        /* ── Mobile card layout ── */
+        .file-cards { display: none; }
+        .file-card {
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            background: var(--container-bg);
+        }
+        .file-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .file-card-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+        .file-card-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--text);
+            word-break: break-all;
+            flex: 1;
+        }
+        .file-card-name a { color: #007bff; text-decoration: none; }
+        .file-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .file-card-meta span { display: flex; align-items: center; gap: 3px; }
+        .file-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .file-card-actions a,
+        .file-card-actions .delete-btn {
+            padding: 5px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            font-family: inherit;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: #007bff;
+        }
+        .file-card-actions .view-btn { color: #28a745; border-color: #28a745; }
+        .file-card-actions .delete-btn { color: #dc3545; border-color: #dc3545; background: none; }
+
+        /* Upload error */
+        .upload-error {
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 13px;
+            margin-left: 4px;
+            background: #fff0f0;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #dc3545;
+        }
+
+        /* Footer */
+        .footer { margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); text-align: center; }
+        .footer a { color: #0076a3; }
+
         /* Modal */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; padding: 16px; }
         .modal-overlay.active { display: flex; }
-        .modal { background: white; border-radius: 8px; padding: 24px 28px; width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
-        .modal h3 { margin: 0 0 16px; font-size: 1rem; color: #333; }
-        .modal input[type="text"] { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; outline: none; box-sizing: border-box; }
+        .modal { background: var(--container-bg); border-radius: 8px; padding: 24px 24px; width: 100%; max-width: 360px; box-shadow: 0 4px 20px var(--shadow); }
+        .modal h3 { margin: 0 0 14px; font-size: 1rem; color: var(--text); }
+        .modal input[type="text"] { width: 100%; padding: 8px 12px; border: 1px solid var(--input-border); border-radius: 4px; font-size: 14px; outline: none; box-sizing: border-box; background: var(--bg); color: var(--text); }
         .modal input[type="text"]:focus { border-color: #007bff; }
         .modal-error { color: #dc3545; font-size: 13px; margin-top: 5px; display: none; }
-        .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
-        .btn-cancel { padding: 7px 16px; background: #f0f0f0; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .btn-create { padding: 7px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .modal-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+        .btn-cancel { padding: 7px 14px; background: var(--btn-cancel-bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-create { padding: 7px 14px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+
+        /* ── Responsive breakpoint ── */
+        @media (max-width: 640px) {
+            body { padding: 10px; }
+            .container { padding: 14px; border-radius: 6px; }
+            .header h1 { font-size: 1rem; }
+            .header img { height: 36px; }
+            .file-table-wrap { display: none; }
+            .file-cards { display: block; }
+            .toolbar button, .toolbar a { padding: 7px 11px; font-size: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -54,94 +245,181 @@
     alert('Suspicious or unsafe file blocked.');
 </script>
 <div class="container">
-    <h1>
-        BaseNode File Manager
-        <img src="/images/BaseNode.png" alt="logo" style="height: 75px; vertical-align: middle; margin-right: 150px;" />
-    </h1>
+
+    <div class="header">
+        <h1 style="text-align: center;">
+            <img src="/images/BaseNode.png" alt="logo" style="height: 100px; vertical-align: middle;" />
+        </h1>
+    </div>
+
     <div class="toolbar">
         <form action="/api/files/upload" method="post" enctype="multipart/form-data" class="upload-form">
             <input type="file" name="file" id="fileInput" class="file-input" multiple onchange="this.form.submit()" />
             <input type="hidden" name="folderId" th:value="${currentFolderId}" />
-            <button type="button" class="upload" onclick="document.getElementById('fileInput').click()">Upload File</button>
+            <button type="button" class="upload" onclick="document.getElementById('fileInput').click()">⬆ Upload</button>
         </form>
-        <a href="#" onclick="openNewFolderModal(); return false;">New Folder</a>
-        <a href="/logout" style="background: #dc3545;">Logout</a>
-
-        <span th:if="${param.uploadError != null}"
-              style="color:#dc3545; font-weight:bold; font-size:13px; margin-left:12px; background:#fff0f0; padding:6px 10px; border-radius:4px; border:1px solid #dc3545;">
+        <a href="#" onclick="openNewFolderModal(); return false;">＋ New Folder</a>
+        <a href="/logout" style="background:#dc3545;">Logout</a>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
+        <span th:if="${param.uploadError != null}" class="upload-error">
             ⚠ <span th:text="${param.uploadError}"></span>
         </span>
-
     </div>
 
     <div class="breadcrumb">
-        <strong>Current Path:</strong>
+        <strong>Path:</strong>
         <a href="/">Home</a>
         <th:block th:each="crumb, stat : ${breadcrumbs}">
             <span class="separator">/</span>
             <span th:if="${stat.last}" class="current" th:text="${crumb.name}"></span>
-            <a th:unless="${stat.last}"
-               th:href="@{'/?folderId=' + ${crumb.folderId}}"
-               th:text="${crumb.name}"></a>
+            <a th:unless="${stat.last}" th:href="@{'/?folderId=' + ${crumb.folderId}}" th:text="${crumb.name}"></a>
         </th:block>
     </div>
 
-    <table>
-        <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Size</th>
-            <th>Modified</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
+    <!-- ══ DESKTOP TABLE ══ -->
+    <div class="file-table-wrap">
+        <table class="file-table">
+            <thead>
+            <tr>
+                <th style="width:35%">Name</th>
+                <th style="width:10%">Type</th>
+                <th style="width:10%">Size</th>
+                <th style="width:18%">Modified</th>
+                <th style="width:27%">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
 
-        <!-- Folders -->
-        <tr th:each="folder : ${folders}">
-            <td>
-                <span class="folder">📁</span>
-                <a class="folder" th:href="@{'/?folderId=' + ${folder.id}}" th:text="${folder.name}">Folder</a>
-            </td>
-            <td>Folder</td>
-            <td th:text="${folder.totalSize}">—</td>
-            <td th:text="${folder.createdDate != null ? #temporals.format(folder.createdDate, 'yyyy-MM-dd | HH:mm') : '—'}">—</td>
-            <td class="actions">
+            <!-- Folders -->
+            <tr th:each="folder : ${folders}">
+                <td class="col-name">
+                    <div class="name-inner">
+                        <span class="folder-icon">📁</span>
+                        <a class="folder-link" th:href="@{'/?folderId=' + ${folder.id}}" th:text="${folder.name}">Folder</a>
+                    </div>
+                </td>
+                <td>Folder</td>
+                <td th:text="${folder.totalSize}">—</td>
+                <td th:text="${folder.createdDate != null ? #temporals.format(folder.createdDate, 'yyyy-MM-dd HH:mm') : '—'}">—</td>
+                <td>
+                    <div class="actions-group">
+                        <a th:href="@{'/?folderId=' + ${folder.id}}">Open</a>
+                        <a th:href="@{'/api/folders/download/' + ${folder.id}}">Download</a>
+                        <form th:action="@{'/api/folders/delete/' + ${folder.id}}" method="post" style="display:contents;">
+                            <button type="submit" class="delete-btn" onclick="return confirm('Are you sure?')">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Files -->
+            <tr th:each="file : ${files}">
+                <td class="col-name">
+                    <div class="name-inner">
+                        <span class="file-icon">📄</span>
+                        <span th:text="${file.fileName}">document.pdf</span>
+                    </div>
+                </td>
+                <td>
+                    <th:block th:with="ct=${file.contentType}">
+                        <span th:text="${ct == null ? '—' :
+                            ct == 'application/pdf' ? 'PDF' :
+                            #strings.startsWith(ct,'image/') ? 'Image' :
+                            #strings.startsWith(ct,'video/') ? 'Video' :
+                            #strings.startsWith(ct,'audio/') ? 'Audio' :
+                            (ct == 'application/msword' or #strings.contains(ct,'wordprocessingml')) ? 'Word' :
+                            (#strings.contains(ct,'spreadsheetml') or ct == 'application/vnd.ms-excel') ? 'Excel' :
+                            (#strings.contains(ct,'presentationml') or ct == 'application/vnd.ms-powerpoint') ? 'PowerPoint' :
+                            (ct == 'application/zip' or ct == 'application/x-zip-compressed') ? 'ZIP' :
+                            ct == 'text/plain' ? 'Text' :
+                            ct == 'text/csv' ? 'CSV' :
+                            ct == 'application/json' ? 'JSON' :
+                            (ct == 'application/xml' or ct == 'text/xml') ? 'XML' : ct}">—</span>
+                    </th:block>
+                </td>
+                <td th:text="${file.fileSize}">120 KB</td>
+                <td th:text="${file.uploadDate != null ? #temporals.format(file.uploadDate, 'yyyy-MM-dd HH:mm') : '—'}">—</td>
+                <td>
+                    <div class="actions-group">
+                        <a th:href="@{'/api/files/view/' + ${file.id}}" class="view" target="_blank">View</a>
+                        <a th:href="@{'/api/files/download/' + ${file.id}}">Download</a>
+                        <form th:action="@{'/delete/' + ${file.id}}" method="post" style="display:contents;">
+                            <button type="submit" class="delete-btn" onclick="return confirm('Are you sure?')">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ══ MOBILE CARDS ══ -->
+    <div class="file-cards">
+
+        <!-- Folder cards -->
+        <div class="file-card" th:each="folder : ${folders}">
+            <div class="file-card-header">
+                <div class="file-card-icon">📁</div>
+                <div class="file-card-name">
+                    <a th:href="@{'/?folderId=' + ${folder.id}}" th:text="${folder.name}">Folder</a>
+                </div>
+            </div>
+            <div class="file-card-meta">
+                <span>📦 <span th:text="${folder.totalSize}">—</span></span>
+                <span>🗓 <span th:text="${folder.createdDate != null ? #temporals.format(folder.createdDate, 'MMM dd, yyyy') : '—'}">—</span></span>
+            </div>
+            <div class="file-card-actions">
                 <a th:href="@{'/?folderId=' + ${folder.id}}">Open</a>
                 <a th:href="@{'/api/folders/download/' + ${folder.id}}">Download</a>
-                <form th:action="@{'/api/folders/delete/' + ${folder.id}}" method="post" style="display:inline;">
-                    <button type="submit" class="delete"
-                            onclick="return confirm('Are you sure?')"
-                            style="background:none; border:none; cursor:pointer; color:#dc3545; padding:0; font-size:inherit;">Delete</button>
+                <form th:action="@{'/api/folders/delete/' + ${folder.id}}" method="post" style="display:contents;">
+                    <button type="submit" class="delete-btn" onclick="return confirm('Are you sure?')">Delete</button>
                 </form>
-            </td>
-        </tr>
+            </div>
+        </div>
 
-        <!-- Files -->
-        <tr th:each="file : ${files}">
-            <td>
-                <span class="file">📄</span>
-                <span th:text="${file.fileName}">document.pdf</span>
-            </td>
-            <td th:text="${file.contentType}">application/pdf</td>
-            <td th:text="${file.fileSize}">120 KB</td>
-            <td th:text="${file.uploadDate != null ? #temporals.format(file.uploadDate, 'yyyy-MM-dd | HH:mm') : '—'}">—</td>
-            <td class="actions">
-                <a th:href="@{'/api/files/view/' + ${file.id}}" class="view" target="_blank">View</a>
+        <!-- File cards -->
+        <div class="file-card" th:each="file : ${files}">
+            <div class="file-card-header">
+                <div class="file-card-icon">📄</div>
+                <div class="file-card-name" th:text="${file.fileName}">document.pdf</div>
+            </div>
+            <div class="file-card-meta">
+                <span>
+                    <th:block th:with="ct=${file.contentType}">
+                        <span th:text="${ct == null ? '—' :
+                            ct == 'application/pdf' ? 'PDF' :
+                            #strings.startsWith(ct,'image/') ? 'Image' :
+                            #strings.startsWith(ct,'video/') ? 'Video' :
+                            #strings.startsWith(ct,'audio/') ? 'Audio' :
+                            (ct == 'application/msword' or #strings.contains(ct,'wordprocessingml')) ? 'Word' :
+                            (#strings.contains(ct,'spreadsheetml') or ct == 'application/vnd.ms-excel') ? 'Excel' :
+                            (#strings.contains(ct,'presentationml') or ct == 'application/vnd.ms-powerpoint') ? 'PowerPoint' :
+                            (ct == 'application/zip' or ct == 'application/x-zip-compressed') ? 'ZIP' :
+                            ct == 'text/plain' ? 'Text' :
+                            ct == 'text/csv' ? 'CSV' :
+                            ct == 'application/json' ? 'JSON' :
+                            (ct == 'application/xml' or ct == 'text/xml') ? 'XML' : ct}">—</span>
+                    </th:block>
+                </span>
+                <span>📦 <span th:text="${file.fileSize}">—</span></span>
+                <span>🗓 <span th:text="${file.uploadDate != null ? #temporals.format(file.uploadDate, 'MMM dd, yyyy') : '—'}">—</span></span>
+            </div>
+            <div class="file-card-actions">
+                <a th:href="@{'/api/files/view/' + ${file.id}}" class="view-btn" target="_blank">View</a>
                 <a th:href="@{'/api/files/download/' + ${file.id}}">Download</a>
-                <form th:action="@{'/delete/' + ${file.id}}" method="post" style="display:inline;">
-                    <button type="submit" class="delete"
-                            onclick="return confirm('Are you sure?')"
-                            style="background:none; border:none; cursor:pointer; color:#dc3545; padding:0; font-size:inherit;">Delete</button>
+                <form th:action="@{'/delete/' + ${file.id}}" method="post" style="display:contents;">
+                    <button type="submit" class="delete-btn" onclick="return confirm('Are you sure?')">Delete</button>
                 </form>
-            </td>
-        </tr>
+            </div>
+        </div>
 
-        </tbody>
-    </table>
+    </div>
 
-    <p style="margin-top:20px; font-size:0.9rem; color:#666; text-align:center;">BaseNode (temp)</p>
+    <p class="footer">
+        Made by <a href="https://github.com/Ahmed-Alsefari/BaseNode">BaseNode team</a> with Love &lt;3
+    </p>
+
 </div>
 
 <!-- New Folder Modal -->
@@ -163,55 +441,52 @@
     </div>
 </div>
 
-
 <script>
+    (function() {
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+    })();
+    function toggleTheme() {
+        const isDark = document.body.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        document.getElementById('themeBtn').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+    }
+    window.addEventListener('DOMContentLoaded', function() {
+        if (document.body.classList.contains('dark'))
+            document.getElementById('themeBtn').textContent = '☀️ Light';
+    });
     function connectSSE() {
-    const evtSource = new EventSource("/events");
-    evtSource.addEventListener("refresh", function () { window.location.reload(); });
-    evtSource.addEventListener("ping", function () { console.log("[SSE] connected"); });
-    evtSource.onerror = function () {
-        evtSource.close();
-        setTimeout(connectSSE, 3000); // reconnect after 3s if dropped
-    };
-}
-connectSSE();
-
+        const evtSource = new EventSource("/events");
+        evtSource.addEventListener("refresh", function () { window.location.reload(); });
+        evtSource.addEventListener("ping", function () { console.log("[SSE] connected"); });
+        evtSource.onerror = function () { evtSource.close(); setTimeout(connectSSE, 3000); };
+    }
+    connectSSE();
     function openNewFolderModal() {
         document.getElementById('folderNameInput').value = '';
         document.getElementById('folderError').style.display = 'none';
         document.getElementById('newFolderModal').classList.add('active');
         setTimeout(() => document.getElementById('folderNameInput').focus(), 80);
     }
-
     function closeNewFolderModal() {
         document.getElementById('newFolderModal').classList.remove('active');
     }
-
     document.getElementById('newFolderModal').addEventListener('click', function(e) {
         if (e.target === this) closeNewFolderModal();
     });
-
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeNewFolderModal();
     });
-
     function submitNewFolder() {
         const nameInput = document.getElementById('folderNameInput');
         const errorEl   = document.getElementById('folderError');
         const name = nameInput.value.trim();
-
         if (!name || name.includes('/') || name.includes('\\') || name.includes('..')) {
             errorEl.style.display = 'block';
             nameInput.focus();
             return;
         }
-
         document.getElementById('newFolderForm').submit();
     }
-
-
-
-
 </script>
 </body>
 </html>

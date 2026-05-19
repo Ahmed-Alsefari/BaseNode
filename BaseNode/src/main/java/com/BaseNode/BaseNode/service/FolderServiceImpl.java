@@ -6,6 +6,7 @@ import com.BaseNode.BaseNode.model.FolderEntity;
 import com.BaseNode.BaseNode.repository.FileRepository;
 import com.BaseNode.BaseNode.repository.FolderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,19 +31,35 @@ public class FolderServiceImpl implements FolderService {
     @Autowired
     private StorageConfig storageConfig;
 
+    @Lazy
+    @Autowired
+    private FileSystemWatcherService watcherService;
+
     @Override
     public FolderEntity createFolder(String name, Long parentId) throws IOException {
         Path basePath = storageConfig.getUploadPath();
 
         String relativePath = buildRelativePath(parentId);
         Path folderPath = basePath.resolve(relativePath).resolve(name);
+        String folderPathStr = folderPath.toAbsolutePath().normalize().toString();
 
-        if (!Files.exists(folderPath)) {
-            Files.createDirectories(folderPath);
+        // Check if folder already exists in DB to avoid duplicates
+        java.util.Optional<FolderEntity> existing = folderRepository.findByFolderPath(folderPathStr);
+        if (existing.isPresent()) {
+            return existing.get();
         }
 
-        FolderEntity folder = EntityFactory.createFolder(name, folderPath.toString(), parentId);
-        return folderRepository.save(folder);
+        // Mark so the watcher ignores the ENTRY_CREATE event for this folder
+        watcherService.markCreatingFolder(folderPathStr);
+        try {
+            if (!Files.exists(folderPath)) {
+                Files.createDirectories(folderPath);
+            }
+            FolderEntity folder = EntityFactory.createFolder(name, folderPathStr, parentId);
+            return folderRepository.save(folder);
+        } finally {
+            watcherService.unmarkCreatingFolder(folderPathStr);
+        }
     }
 
     @Override
@@ -65,24 +82,20 @@ public class FolderServiceImpl implements FolderService {
     }
 
     private void deleteRecursive(Long folderId) throws IOException {
-        // Delete child folders recursively
         List<FolderEntity> children = folderRepository.findByParentId(folderId);
         for (FolderEntity child : children) {
             deleteRecursive(child.getId());
         }
 
-        // Delete file records from DB
         List<FileEntity> files = fileRepository.findByFolderId(folderId);
         fileRepository.deleteAll(files);
         fileRepository.flush();
 
-        // Delete folder record from DB
         FolderEntity folder = folderRepository.findById(folderId).orElse(null);
         if (folder != null) {
             folderRepository.delete(folder);
             folderRepository.flush();
 
-            // Delete physical directory after DB is clean
             Path dirPath = Path.of(folder.getFolderPath());
             if (Files.exists(dirPath)) {
                 deleteDirectory(dirPath);
@@ -136,4 +149,3 @@ public class FolderServiceImpl implements FolderService {
         return String.join("/", parts);
     }
 }
-

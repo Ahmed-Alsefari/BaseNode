@@ -46,6 +46,18 @@ public class BaseNodeLauncher extends JFrame {
 
     public BaseNodeLauncher(Runnable springStarter) {
         super("BaseNode");
+
+        ImageIcon icon = new ImageIcon(
+                getClass().getResource("/static/images/BaseNode2.png")
+        );
+
+        Image scaled = icon.getImage().getScaledInstance(
+                32,
+                32,
+                Image.SCALE_SMOOTH
+        );
+
+        setIconImage(scaled);
         this.springStarter = springStarter;
 
         if (IS_DOCKER) {
@@ -53,7 +65,9 @@ public class BaseNodeLauncher extends JFrame {
             startDockerMode();
             return;
         }
+
         ensureDependencies();
+
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent e) {
@@ -74,6 +88,7 @@ public class BaseNodeLauncher extends JFrame {
         setLocationRelativeTo(null);
         setVisible(true);
     }
+
     private void ensureDependencies() {
         try {
             // Check Node.js
@@ -82,22 +97,24 @@ public class BaseNodeLauncher extends JFrame {
             if (nodeCheck.exitValue() != 0) {
                 System.out.println("[BaseNode] Installing Node.js...");
                 new ProcessBuilder("winget", "install", "OpenJS.NodeJS", "--silent", "--accept-source-agreements", "--accept-package-agreements")
-                    .inheritIO().start().waitFor();
+                        .inheritIO().start().waitFor();
             }
-    
+
             // Check NPort
             Process nportCheck = Runtime.getRuntime().exec("nport --version");
             nportCheck.waitFor();
             if (nportCheck.exitValue() != 0) {
                 System.out.println("[BaseNode] Installing NPort...");
                 new ProcessBuilder("cmd.exe", "/c", "npm", "install", "-g", "nport")
-                    .inheritIO().start().waitFor();
+                        .inheritIO().start().waitFor();
             }
-    
+
         } catch (Exception e) {
             System.err.println("[BaseNode] Dependency check failed: " + e.getMessage());
         }
     }
+
+
     // ─── Docker / headless mode ───────────────────────────────────────────────
 
     private void startDockerMode() {
@@ -181,10 +198,10 @@ public class BaseNodeLauncher extends JFrame {
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
         root.setBorder(new EmptyBorder(20, 22, 20, 22));
 
-        JLabel title = new JLabel("BaseNode");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        JLabel title = new JLabel("~ BaseNode ~");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
         title.setForeground(new Color(0x263238));
-        title.setAlignmentX(LEFT_ALIGNMENT);
+        title.setAlignmentX(CENTER_ALIGNMENT);
         root.add(title);
         root.add(vgap(12));
 
@@ -201,8 +218,8 @@ public class BaseNodeLauncher extends JFrame {
         root.add(vgap(10));
 
         JPanel row1 = row();
-        startBtn = new RoundButton("▶  START", BTN_START);
-        stopBtn  = new RoundButton("■  STOP",  BTN_STOP);
+        startBtn = new RoundButton("START", BTN_START);
+        stopBtn  = new RoundButton("STOP",  BTN_STOP);
         stopBtn.setEnabled(false);
         startBtn.addActionListener(e -> onStart());
         stopBtn .addActionListener(e -> onStop());
@@ -211,7 +228,7 @@ public class BaseNodeLauncher extends JFrame {
         root.add(row1);
         root.add(vgap(8));
 
-        statusDot = new JLabel("⬤  Stopped");
+        statusDot = new JLabel("   Stopped");
         statusDot.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         statusDot.setForeground(STOPPED);
         statusDot.setAlignmentX(LEFT_ALIGNMENT);
@@ -321,7 +338,7 @@ public class BaseNodeLauncher extends JFrame {
 
     private void startNPort(String name) throws IOException {
         ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", "nport.cmd",
-                String.valueOf(APP_PORT), "-s", name, "-l", "en");
+                String.valueOf(APP_PORT), "-s", name ,"-l", "en");
         pb.redirectErrorStream(true);
         nportProcess = pb.start();
 
@@ -473,7 +490,7 @@ public class BaseNodeLauncher extends JFrame {
     }
 
     private void setStatus(String text, Color color) {
-        statusDot.setText("⬤  " + text);
+        statusDot.setText("   " + text);
         statusDot.setForeground(color);
     }
 
