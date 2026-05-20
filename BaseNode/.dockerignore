@@ -1,0 +1,41 @@
+# Maven build output
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven wrapper jar
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# Git
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Logs
+*.log
+logs/
+
+# H2 Database files
+*.mv.db
+*.trace.db
+
+# User uploaded files
+Uploads/
+
+# Docs
+README.md
+HELP.md
