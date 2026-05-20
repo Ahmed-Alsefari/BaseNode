@@ -1,4 +1,3 @@
-<img width="352" height="471" alt="image" src="https://github.com/user-attachments/assets/c04c53f6-a8c5-428c-a20e-9b5dd1668d1e" /><div align="center">
 
 <img src="BaseNode/src/main/resources/static/images/BaseNode.png" alt="BaseNode Logo" width="1200"/>
 
@@ -234,7 +233,7 @@ nport.exe               > select English
 
 
 <p align="center">
-<img src="BaseNode/src/main/resources/static/images/6.png" alt="BaseNode Logo" width="500"/>
+<img src="BaseNode/src/main/resources/static/images/6.png" alt="BaseNode Logo" width="400"/>
 </p>
 
 <p align="center">
