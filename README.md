@@ -153,27 +153,6 @@ BaseNode/
 
 
 
-```
-BaseNode/
-├── src/main/java/com/BaseNode/BaseNode/
-│   ├── composite/        # Composite pattern (file system tree)
-│   ├── controller/       # Web + API controllers
-│   ├── service/          # Business logic, file watcher, NPort, audit, validation
-│   ├── model/            # JPA entities (File, Folder, User)
-│   ├── repository/       # Spring Data repositories
-│   ├── factory/          # EntityFactory (Factory pattern)
-│   ├── observer/         # SSE observer for real-time updates
-│   ├── request/          # Login and Register request DTOs
-│   └── config/           # Security + storage config
-├── src/main/resources/
-│   ├── templates/        # Thymeleaf HTML pages (index, login, register)
-│   ├── static/           # Images
-│   └── application.properties
-└── pom.xml
-```
-
-
-
 
 ---
 
