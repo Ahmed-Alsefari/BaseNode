@@ -1,17 +1,20 @@
 
 <img src="BaseNode/src/main/resources/static/images/BaseNode.png" alt="BaseNode Logo" width="1200"/>
 
+<p align="center">
+   A lightweight personal file server — access your files from any browser, anywhere!
+</p>
 
-**A lightweight personal file server — access your files from any browser, anywhere.**
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk" alt="Java" />
+  <a href="https://www.docker.com"><img src="https://img.shields.io/badge/Container-Docker-2496ED?style=flat-square&logo=docker" alt="Docker" /></a>
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen?style=flat-square&logo=springboot" alt="Spring Boot" />
+  <img src="https://img.shields.io/badge/Database-H2-blue?style=flat-square" alt="H2" />
+  <img src="https://img.shields.io/badge/Template-Thymeleaf-005F0F?style=flat-square" alt="Thymeleaf" />
+  <img src="https://img.shields.io/badge/Validation-Apache%20Tika-red?style=flat-square" alt="Apache Tika" />
+  <img src="https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square" alt="License" />
+</p>
 
-![Java](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen?style=flat-square&logo=springboot)
-![H2](https://img.shields.io/badge/Database-H2-blue?style=flat-square)
-![Thymeleaf](https://img.shields.io/badge/Template-Thymeleaf-005F0F?style=flat-square)
-![Apache Tika](https://img.shields.io/badge/Validation-Apache%20Tika-red?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
-
-</div>
 
 ---
 
@@ -63,6 +66,25 @@ BaseNode solves this — install it on your PC, and access your files from any p
 
 - Java 17 or higher
 - Maven 3.6 or higher
+
+
+## Remote Access (NPort)
+
+NPort must be installed and available on `PATH` for this feature to work. The Docker image installs it automatically.
+
+```
+# install NodeJS
+winget install OpenJS.NodeJS
+
+# install Nport
+npm i -g nport
+
+# set up Nport
+nport.exe               > select English 
+
+```
+
+
 
 ### Run locally
 
@@ -191,36 +213,24 @@ BaseNode/
 | Data | JSON, CSV, XML |
 | Audio / Video | MP3, WAV, MP4, MPEG |
 
+You can modify the allowed Types in **FileValidationService**
+
 ---
 
-## Remote Access (NPort)
-
-NPort must be installed and available on `PATH` for this feature to work. The Docker image installs it automatically.
-```
-# install NodeJS
-winget install OpenJS.NodeJS
-
-# install Nport
-npm i -g nport
-
-# set up Nport
-nport.exe               > select English 
-
-```
 
 ## Screenshots
 
 
 <p align="center">
-<img src="BaseNode/src/main/resources/static/images/6.png" alt="BaseNode Logo" width="400"/>
+<img src="BaseNode/src/main/resources/static/images/6.png" alt="BaseNode Logo" width="350"/>
 </p>
 
 <p align="center">
-<img src="BaseNode/src/main/resources/static/images/1.png" alt="BaseNode Logo" width="500"/>
+<img src="BaseNode/src/main/resources/static/images/1.png" alt="BaseNode Logo" width="350"/>
 </p>
    
 <p align="center">
-<img src="BaseNode/src/main/resources/static/images/2.png" alt="BaseNode Logo" width="500"/>
+<img src="BaseNode/src/main/resources/static/images/2.png" alt="BaseNode Logo" width="350"/>
 </p>
 
 
@@ -231,6 +241,24 @@ nport.exe               > select English
 <p align="center">
 <img src="BaseNode/src/main/resources/static/images/5.png" alt="BaseNode Logo" width="750"/>
 </p>
+
+##
+
+<p align="center">
+<img src="BaseNode/src/main/resources/static/images/7.png" alt="BaseNode Logo" width="750"/>
+</p>
+
+
+
+## Generative AI Disclosure
+
+This project used generative AI tools in accordance with the CPIT-252 course policy on acceptable use. All AI-assisted work is cited below per the syllabus requirements.
+
+| Tool | Prompt / Usage |
+| :--- | :--- |
+| Claude | *Claude, 19/5/2026 of the prompt*, "Review our UI HTML/CSS code and suggest layout modifications to fix alignment issues." (Used for debugging and fixing design bugs). |
+| Claude deepseek | *Claude, 5/5/2026 of the prompt*, "How can we debug and fix a thread synchronization issue in our file watcher class that updates the list when a file is added?" (Used for debugging and fixing bugs). |
+| Claude Gemini | *Claude, 19/5/2026 of the prompt*, "Generate complete unit tests for our existing methods to achieve most test coverage." (Used for generating comprehensive test classes as permitted by the instructor). |
 
 
 ## License
